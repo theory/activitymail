@@ -11,7 +11,8 @@ Revision history for activitymail.
          is a list of options to be passed through to diff. This is for
          reasons of performance (see the diff man page for more on this). The
          default value of -o is now simply "-u".
-       - Added support for directory names with spaces and commas.
+       - Added support for directory names with spaces and commas. Reported by
+         Colin Gray.
        - Removed discussion of forking from the known issues section. It seems
          to work just fine the way it is.
 
