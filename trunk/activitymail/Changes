@@ -1,5 +1,7 @@
 Revision history for activitymail.
 
+1.13
+
 1.12   Mon Sep  8 17:57:50 2003
        - Documented -V option. Thanks to Hernan Otero for the spot.
        - Fixed file names in diffs against /dev/null so that they're properly

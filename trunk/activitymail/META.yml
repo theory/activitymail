@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: activitymail
-version: 1.11
+version: 1.12
 license: perl
 distribution_type: module
 requires:
