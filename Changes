@@ -2,6 +2,13 @@ Revision history for activitymail.
 
 1.03
        - Added -e option so that the cvs executable can be specified.
+         Thanks to Derek Scherger for the suggestion.
+       - Added -u option to specify the From header of email messages.
+         Thanks to Derek Scherger for the suggestion.
+       - Added -g option to use $USER environment variable for grouping
+         commit transactions. Useful for connecting via :pserver:, where
+         grouping via pgrp won't work. Thanks to Derek Scherger for the
+         suggestion.
        - Added "Bugs" section to documentation with a link to the CPAN Request
          Tracker
 
