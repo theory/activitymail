@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: activitymail,v 1.6 2002/07/30 01:12:58 david Exp $
+# $Id: activitymail,v 1.7 2002/07/30 04:13:22 david Exp $
 
 use strict;
 use Getopt::Std;
@@ -913,11 +913,14 @@ better than I do could help me to irradicate this issue. For anyone else who's
 uncomfortable with the possibility of this issue arrising, don't use the -d
 option.
 
-If you notice any other issues, drop me a line.
+=head1 BUGS
+
+Report all bugs via the CPAN Request Tracker at
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=activitymail>.
 
 =head1 AUTHOR
 
-David Wheeler E<lt>david@wheeler.netE<gt>
+David Wheeler <david@wheeler.net>
 
 =head1 SEE ALSO
 
