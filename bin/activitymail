@@ -3,14 +3,14 @@
 eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
     if 0; # not running under some shell
 
-# $Id: activitymail,v 1.17 2003/08/27 23:24:11 david Exp $
+# $Id: activitymail,v 1.18 2003/08/28 14:49:44 david Exp $
 
 use strict;
 use Getopt::Std;
 use File::Basename qw(basename dirname);
 use vars qw($VERSION);
 
-$VERSION = '1.10';
+$VERSION = '1.11';
 $|++;
 
 ##############################################################################
@@ -1169,6 +1169,27 @@ David Wheeler <david@wheeler.net>
 =head1 SEE ALSO
 
 L<syncmail|syncmail>, L<commit_prep|commit_prep>, L<log_accum|log_accum>.
+
+=over 4
+
+=item CVSspam
+
+Ruby-powered CVS notification. Includes colored HTML representations of diffs
+right in the email. L<http://www.badgers-in-foil.co.uk/projects/cvsspam/>.
+
+=item syncmail
+
+Python-powered CVS notification. Sends emails with diffs for every directory
+in a single commit. Popular on
+SourceForge. L<http://sourceforge.net/projects/cvs-syncmail>.
+
+=item commit_prep & log_accum
+
+The original Perl 4-powered CVS notification applications.
+L<http://ccvs.cvshome.org/source/browse/ccvs/contrib/log_accum.in>,
+L<http://ccvs.cvshome.org/source/browse/ccvs/contrib/commit_prep.in>.
+
+=back
 
 =head1 COPYRIGHT AND LICENSE
 
