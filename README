@@ -26,9 +26,14 @@ DEPENDENCIES
 
 This module requires these other modules and libraries:
 
-  File::Spec
   Getopt::Std
   File::Basename
+
+RECOMMENDED
+
+This module works best but does not require these other modules and libraries.
+
+  File::Spec
 
 COPYRIGHT AND LICENCE
 
