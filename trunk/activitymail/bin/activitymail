@@ -363,7 +363,7 @@ sub get_diffs {
         # Skip binary files.
         next if -B $file;
         # Skip any from the list passed by the user.
-        if ($opt_B && $file =~ /([^.]*)$/) {
+        if ($opt_B && $file =~ /\.([^.]+)$/) {
             next if $ignore{lc $1};
         }
         # Okay, now process this sucker.
