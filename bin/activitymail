@@ -3,7 +3,7 @@
 eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
     if 0; # not running under some shell
 
-# $Id: activitymail,v 1.14 2003/07/03 04:07:36 david Exp $
+# $Id: activitymail,v 1.15 2003/08/26 21:32:39 david Exp $
 
 use strict;
 use Getopt::Std;
@@ -133,7 +133,7 @@ sub tmp_base_name { "#cvs\.$_[0]\.$pgrp" }
 ##############################################################################
 # This function takes $opt_f as an argument, and returns the directory on
 # which the current action is being processed, and an anonymous array of the
-# file specs in in that directory that are affected by this action.
+# file specs in that directory that are affected by this action.
 ##############################################################################
 
 sub parse_file_list {
@@ -755,7 +755,7 @@ __END__
 
 =head1 NAME
 
-activitymail - CVS activity notification.
+activitymail - CVS activity notification
 
 =head1 SYNOPSIS
 
@@ -1083,7 +1083,7 @@ L<syncmail|syncmail>, L<commit_prep|commit_prep>, L<log_accum|log_accum>.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2002, David Wheeler. All Rights Reserved.
+Copyright (c) 2002-2003, David Wheeler. All Rights Reserved.
 
 This program is free software; you can redistribute it and/or modify it under
 the same terms as Perl.
