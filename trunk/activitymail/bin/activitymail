@@ -10,7 +10,7 @@ use Getopt::Std;
 use File::Basename qw(basename dirname);
 use vars qw($VERSION);
 
-$VERSION = '1.11';
+$VERSION = '1.12';
 $|++;
 
 ##############################################################################
@@ -814,6 +814,7 @@ Supported options:
   -u <email>     User email address from which email should be sent.
   -g             Use \$USER environment variable to group collection of commits.
   -M <size>      Maximum size of emailed messages in kilobytes.
+  -V             Include revision numbers in the email message.
   -H             Use HTML for generated emails.
   -w <url>       Include links to specified cvsweb url in generated email.
   -B <list>      Space-delimited list of (binary) file name extensions that should
@@ -1019,6 +1020,10 @@ size would be sent then an error message is printed to the user's terminal,
 instead. This option is useful if your repository contains large binary files
 not prevented from be diffed by C<-B>, or when adding many files at once.
 In those cases, failing to use this option may result in broken mail clients.
+
+=item -V
+
+Include the old and new revision numbers after each file listed in the email.
 
 =item -H
 
