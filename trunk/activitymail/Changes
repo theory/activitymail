@@ -1,5 +1,7 @@
 Revision history for activitymail.
 
+1.17
+
 1.16   Tue Oct 28 05:22:23 2003
        - Now only adding the version arguments to the CVSWeb diff URL if V has
          been specified. This makes it easier to use activitymail in
