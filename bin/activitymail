@@ -3,14 +3,14 @@
 eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
     if 0; # not running under some shell
 
-# $Id: activitymail,v 1.15 2003/08/26 21:32:39 david Exp $
+# $Id: activitymail,v 1.16 2003/08/27 23:18:37 david Exp $
 
 use strict;
 use Getopt::Std;
 use File::Basename qw(basename dirname);
 use vars qw($VERSION);
 
-$VERSION = '1.05';
+$VERSION = '1.10';
 $|++;
 
 ##############################################################################
@@ -22,21 +22,21 @@ BEGIN {
     # Use File::Spec if we can. Otherwise assume simple Unix semantics.
     eval "require File::Spec::Functions";
     if ($@) {
+        # Use simple Unix semantics.
         *catdir = sub { join '/', @_ };
         *tmpdir = sub { '/tmp' };
+        *splitdir = sub { split m|/|, $_[0] };
     } else {
-        # These have to be eval'd in order to avoid the silly "used only once"
-        # warnings.
-        eval "*catdir = *File::Spec::Functions::catdir";
-        eval "*tmpdir = *File::Spec::Functions::tmpdir";
+        # Import the functions we'll need.
+        File::Spec::Functions->import(qw(catdir tmpdir splitdir));
     }
 
     # Get the command-line arugments.
     use vars qw($opt_f $opt_r $opt_l $opt_m $opt_t $opt_n $opt_i $opt_p $opt_c
                 $opt_s $opt_h $opt_d $opt_a $opt_D $opt_o $opt_e $opt_u $opt_g
-                $opt_w $opt_H
+                $opt_w $opt_H $opt_B $opt_j $opt_M $opt_S $opt_v
                );
-    getopts('f:lr:m:t:nipcs:dhaDo:e:u:gw:H');
+    getopts('f:lr:m:t:nipcs:dhaDo:e:u:gw:HB:j:M:Sv');
 }
 
 ##############################################################################
@@ -55,10 +55,9 @@ $SIG{CHLD} = 'IGNORE';
 my $tmpdir = tmpdir();
 my $pgrp = $opt_g ? $ENV{USER} : getpgrp;
 
-# Determine location of CVS binary.
+# Determine location of CVS and diff binaries.
 $opt_e ||= 'cvs';
-
-my $baseurl = $opt_w;
+$opt_j ||= 'diff';
 
 # This hash will be used in several of the functions below.
 my %map = ( mod => 'Modified Files',
@@ -71,7 +70,8 @@ my %map = ( mod => 'Modified Files',
 ##############################################################################
 
 # Check for required command-line arguments.
-usage() if $opt_h || (!$opt_l && !($opt_f && $opt_t));
+version() if $opt_v;
+usage() if $opt_h || (!$opt_l && !$opt_v && !($opt_f && $opt_t));
 
 # Run the directory logging mode, if specified.
 log_dir($ARGV[0]) if $opt_l;
@@ -80,7 +80,7 @@ log_dir($ARGV[0]) if $opt_l;
 $opt_o ||= '-u --minimal';
 
 # Set the content type.
-$opt_H = $opt_H ? 'text/html' : 'text/plain';
+my $ctype = $opt_H ? 'text/html' : 'text/plain';
 
 # Get the current working directory, the name of the repository module, and a
 # list of the files being revised in the current directory.
@@ -89,12 +89,14 @@ my ($mod, $dir, $revs) = parse_file_list($opt_f);
 # Unless we're in commit mode, just send the current message.
 syncmail($mod, $revs) unless $opt_c;
 
-# So if we got here, parse the contents of STDIN.
-my ($msg, $files) = parse_stdin($dir);
+# So if we got here, parse the contents of STDIN. This gives us the message
+# and tags for only the last directory to be committed, but that should be
+# fine.
+my ($msg, $files, $tags) = parse_stdin($dir, $revs);
 
 # If it's the last directory, send the message. Otherwise, save the data to
 # disk for later in the commit.
-is_last_dir($dir) ? notify($mod, $msg, $revs, $files)
+is_last_dir($dir) ? notify($mod, $msg, $revs, $files, $tags)
   : save_data($revs, $files);
 
 # That's it!
@@ -139,7 +141,7 @@ sub tmp_base_name { "#cvs\.$_[0]\.$pgrp" }
 sub parse_file_list {
     # Get the directory, list of file specs, and the module name.
     my ($dir, @revs) = split ' ', shift;
-    my ($mod) = split '/', $dir;
+    my ($mod) = splitdir $dir;
     DEBUG && dbpnt("Directory: '$dir'; Module: $mod\n");
 
     if ($revs[0] eq '-') {
@@ -160,7 +162,15 @@ sub parse_file_list {
         }
     }
 
-    return ($mod, $dir, \@revs);
+    # If we get here, it's not a special status message, but a list of files
+    # and revisions. So split them up into a hash.
+    my %revmap;
+    for (@revs) {
+        my ($file, $old, $new) = split ',';
+        $revmap{$file} = [$old, $new];
+    }
+
+    return ($mod, $dir, \%revmap);
 }
 
 ##############################################################################
@@ -200,12 +210,14 @@ sub syncmail {
 ##############################################################################
 
 sub mk_subject {
-    my ($msg, $mod) = @_;
+    my ($msg, $mod, $files) = @_;
     # Strip out all carriage returns.
     $msg =~ s/\n/ /g;
     # Truncate to first period after a minimum of 10 characters.
     my $i = index $msg, '. ';
     $msg = substr($msg, 0, $i + 1) if $i > 0;
+    # Prepend the filename or top directory.
+    $msg = modified_area($files) . $msg if $opt_S and $opt_c and $files;
     # Prepend the module name.
     $msg = "$mod: $msg" if $opt_p;
     # Prepend the optional message.
@@ -213,6 +225,25 @@ sub mk_subject {
     # Truncate to the last word under 72 characters.
     $msg =~ s/^(.{0,72}\s+).*$/$1/m if length $msg > 72;
     return $msg;
+}
+
+##############################################################################
+# This function decides how to summarize the list of modified files to give a
+# hint in the subject line of what has been changed
+##############################################################################
+sub modified_area {
+    my $files = shift;
+    my @filelist = (@{$files->{mod}}, @{$files->{add}}, @{$files->{rem}})
+      or return '';
+    return basename(split /\s+/, $filelist[0]) . ': ' if @filelist == 1;
+    my $ret = dirname split /\s+/, shift @filelist;
+    for my $f (@filelist) {
+        my $dir = dirname split /\s+/, $f;
+        $ret = $dir if length $dir < length $ret;
+    }
+    # Strip out unnecessaries.
+    $ret =~ s/^$ENV{CVSROOT}//o;
+    return catdir((splitdir $ret)[-2,-1]). ': ';
 }
 
 ##############################################################################
@@ -243,6 +274,15 @@ sub slurp_file {
 
 sub mail {
     my ($subject, $body) = @_;
+
+    # over max size?
+    if ($opt_M and (length($body) / 1024) > $opt_M) {
+        print "*** Not sending mail to $opt_t!\n";
+        print "*** The message is ", int(length($body) / 1024),
+          "k long and maximum message size is ${opt_M}k.\n";
+        exit;
+    }
+
     print "Sending mail to $opt_t...";
 
     $opt_s ||= find_sendmail() or mydie("Cannot find sendmail. Use -s.\n");
@@ -256,11 +296,11 @@ sub mail {
                    "http://search.cpan.org/dist/activitymail/\n";
     if ($opt_a) {
         print SENDMAIL qq{Content-Type: multipart/mixed; boundary="$opt_a"\n\n}
-          . "--$opt_a\nContent-Type: $opt_H\n";
+          . "--$opt_a\nContent-Type: $ctype\n";
     } else {
-        print SENDMAIL "Content-Type: $opt_H\n";
+        print SENDMAIL "Content-Type: $ctype\n";
     }
-    print SENDMAIL "\n$body";
+    print SENDMAIL "\n$$body";
     print SENDMAIL "--$opt_a--\n" if $opt_a;
     close SENDMAIL;
     print "Done\n";
@@ -283,27 +323,34 @@ sub get_diffs {
     my $revs = shift;
     # Initialize the diff string.
     my $diffs = '';
+    # Initialize hash of binary file name extesions.
+    my %ignore = $opt_B ? (map { lc $_ => 1 } split /\s+/, $opt_B) : ();
     # Change into the first directory.
-    foreach (@$revs) {
-        # Get the file name and version numbers from the file spec.
-        my ($file, $old, $new) = split ',';
+    while (my ($file, $vers) = each %$revs) {
+        # Skip binary files.
+        next if -B $file;
+        # Skip any from the list passed by the user.
+        if ($opt_B && $file =~ /([^.]*)$/) {
+            next if $ignore{lc $1};
+        }
         # Okay, now process this sucker.
-        if ($old eq 'NONE') {
-            # It's a new file. Note it.
-            $diffs .= "--- NEW FILE: $file ---\n";
+        if ($vers->[0] eq 'NONE') {
+            # It's a new file.
             if (-e $file) {
-                # If the file exists, simply grab its contents.
-                $diffs .= slurp_file($file);
+                # Compare to /dev/null.
+                $diffs .= `$opt_j $opt_o '/dev/null' '$file'`;
             } else {
-                # Otherwise, read the file from a non-changing update.
-                $diffs .= `$opt_e -fn update -r $new -p $file`;
+                # Otherwise, read the file from a non-changing update and pipe
+                # that to diff.
+                $diffs .= `$opt_e -fn update -r $vers->[1] -p $file | $opt_j $opt_o '/dev/null', -`;
             }
-        } elsif ($new eq 'NONE') {
-            # The file has been deleted. Simply note that fact.
-            $diffs .= "--- $file DELETED ---\n";
+        } elsif ($vers->[1] eq 'NONE') {
+            # The file has been deleted. Read it from a non-changing update
+            # and pipe it to diff.
+            $diffs .= `$opt_e -fn update -r $vers->[0] -p $file | $opt_j $opt_o - '/dev/null'`;
         } else {
             # We actually have to get a diff!
-            $diffs .= `$opt_e -f diff -kk $opt_o -r $old -r $new '$file'`;
+            $diffs .= `$opt_e -f diff -kk $opt_o -r $vers->[0] -r $vers->[1] '$file'`;
         }
     }
     return $diffs;
@@ -315,8 +362,9 @@ sub get_diffs {
 ##############################################################################
 
 sub parse_stdin {
-    my $dir = shift;
+    my ($dir, $revs) = @_;
     my ($msg, $flag, $files) = ('', '', { mod => [], add => [], rem => [] } );
+    my $tags;
     while (<STDIN>) {
         if (/^Modified Files/) {
             $flag = 'mod';
@@ -340,17 +388,23 @@ sub parse_stdin {
         if ($flag eq 'log') {
             # Grab it for the log.
             $msg .= $_;
+        } elsif (/^\s+Tag:\s+(.*)$/) {
+            # It's a branch tag. Add it to the message if it hasn't been
+            # added already.
+            $tags->{$1} = 1;
         } else {
-            # Add it to the relevant list.
-            ## Need to add code to check for "Tag:" here...
             chomp;
             push @{ $files->{$flag} },
-              ( map { catdir($ENV{CVSROOT}, $dir, $_) } split) if $_;
+              ( map { catdir($ENV{CVSROOT}, $dir, $_) .
+                      " $revs->{$_}[0] $revs->{$_}[1]" } split) if $_;
         }
     }
     # Make sure there're no carriage returns or spaces at the end of $msg.
     $msg =~ s/\s+$//s;
-    return ($msg, $files);
+    # Turn the tags into an array.
+    $tags = [ keys %$tags ] if $tags;
+    # Return!
+    return ($msg, $files, $tags);
 }
 
 ##############################################################################
@@ -380,7 +434,7 @@ sub is_last_dir {
 ##############################################################################
 
 sub notify {
-    my ($mod, $msg, $revs, $files) = @_;
+    my ($mod, $msg, $revs, $files, $tags) = @_;
     print "Collecting file lists...";
     if ($opt_d) {
         # We want diffs. That means we have to fork so that CVS will let go
@@ -390,14 +444,14 @@ sub notify {
             $files = get_files($files);
             # Grab the diffs for the latest files.
             $files->{rev} .= get_diffs($revs);
-            my $subject = mk_subject($msg, $mod);
-            mail($subject, build_msg($msg, $files, $revs, $subject));
+            my $subject = mk_subject($msg, $mod, $files);
+            mail($subject, build_msg($msg, $files, $revs, $subject, $tags));
             exit;
         }
     } else {
         # No need for diffs. Just send it as is.
         $files = get_files($files);
-        mail(mk_subject($msg, $mod), build_msg($msg, $files, $revs));
+        mail(mk_subject($msg, $mod, $files), build_msg($msg, $files, $revs));
         exit;
     }
     # Exit the parent process.
@@ -476,18 +530,6 @@ sub get_files {
     return $fetched;
 }
 
-sub get_revs {
-    my ($revs, $nm) = @_;
-    foreach (@$revs) {
-           # Get the file name and version numbers from the file spec.
-           my ($file, $old, $new) = split ',';
-        if ($file eq $nm) {
-            return ($old, $new);
-        }
-    }
-    return ('?', '?');
-}
-
 ##############################################################################
 # This function takes an existing message, a files href, and the message
 # suject as arguments, and returns a fully formatted message that includes the
@@ -495,44 +537,48 @@ sub get_revs {
 ##############################################################################
 
 sub build_msg {
-    my ($msg, $files, $revs, $subject) = @_;
     DEBUG && dbpnt("Building message body.\n");
     if ($opt_H) {
-        $msg = build_html_msg($msg, $files, $revs, $subject);
+        $msg = build_html_msg(@_);
     } else {
-        $msg = build_text_msg($msg, $files, $revs, $subject);
+        $msg = build_text_msg(@_);
     }
 
     # Okay, now add the diffs.
     if ($opt_d) {
         # Make it either an attachment or inline, depending on -a.
-        $msg .= $opt_a ? attach($subject) : "\n$map{rev}\n" . '-' x length($map{rev}). "\n";
+        $$msg .= $opt_a ? attach($_[3]) :
+          "\n$map{rev}\n" . '-' x length($map{rev}). "\n";
         # Attach those diffs!
-        $msg .= $files->{rev};
+        $$msg .= $_[1]->{rev};
     }
     return $msg;
 }
 
 sub build_text_msg {
-    my ($msg, $files, $revs, $subject) = @_;
+    my ($msg, $files, $revs, $subject, $tags) = @_;
     $msg = "Log Message:\n-----------\n$msg\n";
 
     # Create the lines that will go underneath the above in the message.
     my %dash = ( map { $_ => '-' x length($map{$_}) } keys %map );
 
-    foreach (qw(mod add rem)) {
+    # Add any tags.
+    $msg .= "\nTags:\n----\n" . join("\n    ", @$tags) . "\n" if $tags;
+
+    foreach my $type (qw(mod add rem)) {
         # Skip it if there's nothing to report.
-        next unless @{ $files->{$_} };
+        next unless @{ $files->{$type} };
 
         # Identify the action.
-        $msg .= "\n$map{$_}:\n$dash{$_}\n";
+        $msg .= "\n$map{$type}:\n$dash{$type}\n";
 
         # Grab the first directory name.
-        my $lastdir = dirname($files->{$_}[0]);
+        my $lastdir = dirname($files->{$type}[0]);
         $lastdir =~ s|^$ENV{CVSROOT}/?||;
         $msg .= "    $lastdir:\n";
 
-        foreach my $f (@{ $files->{$_} }) {
+        for (@{ $files->{$type} }) {
+            my ($f, $old, $new) = split;
             my $curdir = dirname($f);
             $curdir =~ s|^$ENV{CVSROOT}/?||;
             if ($curdir ne $lastdir) {
@@ -546,73 +592,69 @@ sub build_text_msg {
             my $nm = basename($f);
             my $dir = $curdir;
             $dir =~ s|^$ENV{CVSROOT}/?||;
-            my ($old, $new) = get_revs($revs, $nm);
-            my $url = $baseurl ? $baseurl . $dir . "/" . $nm : "";
-            if ($_ eq 'mod') {
-                $url .= ".diff?r1=" . $old . "&r2=" . $new;
+            my $url = $opt_w ? "$opt_w$dir/$nm" : '';
+            if ($type eq 'mod') {
+                $url .= ".diff?r1=$old&r2=$new";
                 $nm .= " (r$old -> r$new)";
-            } elsif ($_ eq 'add') {
-                $url .= "?rev=" . $new . "&content-type=text/x-cvsweb-markup";
+            } elsif ($type eq 'add') {
+                $url .= "?rev=$new&content-type=text/x-cvsweb-markup";
                 $nm .= " (r$new)";
             }
-            $msg .= $nm . "\n";
-            if ($baseurl) {
-                $msg .= "        (" . $url . ")\n";
-            }
+            $msg .= "$nm\n";
+            $msg .= "        ($url)\n" if $opt_w;
         }
     }
-    return $msg;
+    return \$msg;
 }
 
 sub build_html_msg {
     my ($msg, $files, $revs, $subject) = @_;
-    $msg = "<font size=-2><strong>Log Message</strong></font><br>$msg<p><ul>";
+    $msg = "<body>\n<h3>Log Message</h3>\n\n<pre>$msg</pre>\n\n";
 
-    foreach (qw(mod add rem)) {
+    # Add any tags.
+    $msg .= "<h3>Tags:</h3>\n<ul>\n  <li>" .
+      join("</li>\n<li>  ", @$tags) . "</li>\n</ul>\n" if $tags;
+
+    foreach my $type (qw(mod add rem)) {
         # Skip it if there's nothing to report.
-        next unless @{ $files->{$_} };
+        next unless @{ $files->{$type} };
 
         # Identify the action.
-        $msg .= "<p>\n<li>$map{$_}<p><ul>";
+        $msg .= "<h3>$map{$type}</h3>\n";
 
         # Grab the first directory name.
-        my $lastdir = dirname($files->{$_}[0]);
+        my $lastdir = dirname($files->{$type}[0]);
         $lastdir =~ s|^$ENV{CVSROOT}/?||;
-        $msg .= "<p><li>$lastdir<p>\n<ul>";
+        $msg .= "<h4>$lastdir</h4>\n<ul>\n";
 
-        foreach my $f (@{ $files->{$_} }) {
+        for (@{ $files->{$type} }) {
+            my ($f, $old, $new) = split;
             DEBUG && dbpnt("processing file $f\n");
             my $curdir = dirname($f);
             $curdir =~ s|^$ENV{CVSROOT}/?||;
             if ($curdir ne $lastdir) {
                 # Different directory. Record that.
                 $lastdir = $curdir;
-                $msg .= "</ul>\n</li><p><li>$lastdir<p>\n<ul>";
+                $msg .= "</ul>\n<h4>$lastdir</h4>\n<ul>\n";
             }
             # Record the name of the file altered.
             my $nm = basename($f);
             my $dir = $curdir;
             $dir =~ s|^$ENV{CVSROOT}/?||;
             $msg .= "<li>";
-            my ($old, $new) = get_revs($revs, $nm);
-            my $url = $baseurl ? $baseurl . $dir . "/" . $nm : "";
-            if ($_ eq 'mod') {
-                $url .= ".diff?r1=" . $old . "&r2=" . $new;
-                $nm .= " <font size=\"-2\">(r$old -> r$new)</font>";
-            } elsif ($_ eq 'add') {
-                $url .= "?rev=" . $new . "&content-type=text/x-cvsweb-markup";
-                $nm .= " <font size=\"-2\">(r$new)</font>";
+            my $url = $opt_w ? "$opt_w$dir/$nm" : '';
+            if ($type eq 'mod') {
+                $url .= ".diff?r1=$old&r2=$new";
+                $nm .= " (r$old -> r$new)";
+            } elsif ($type eq 'add') {
+                $url .= "?rev=$new&content-type=text/x-cvsweb-markup";
+                $nm .= " (r$new)";
             }
-            if ($baseurl) {
-                $msg .= "<a href=\"$url\">" . $nm . "</a>";
-            } else {
-                $msg .= $nm;
-            }
-            $msg .= "\n</li>";
+            $msg .= ($opt_w ? qq{<a href="$url">$nm</a>} : $nm) . "</li>\n";
         }
-        $msg .= "</ul>\n</li></ul>\n</li>";
+        $msg .= "</ul>\n";
     }
-    $msg .= "</ul>\n";
+    return \$msg;
 }
 
 ##############################################################################
@@ -687,7 +729,9 @@ sub attach {
 
     # Return the attachment headers.
     local $" = '';
-    return qq{--$opt_a
+    return qq{
+
+--$opt_a
 Content-Disposition: attachment; filename=$user-@gm[5,4,3,2,1,0]-diff.txt
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=ISO-8859-1
@@ -713,12 +757,22 @@ sub mydie { print "######## activitymail error: $_[0]"; exit }
 sub dbpnt { print "\n" if $_[1]; print "@@@@@@@@ activitymail debug: $_[0]" }
 
 ##############################################################################
+# This function prints a version message.
+##############################################################################
+sub version {
+    my $exe = basename($0);
+    print qq{$exe v$VERSION\n};
+    exit;
+}
+
+##############################################################################
 # This function prints a usage message.
 ##############################################################################
 
 sub usage {
     my $exe = basename($0);
-    print qq{
+    print qq{$exe v$VERSION
+
 Usage: $exe -l
 
        $exe -f %{sVv} -t admins\@example.com [options]
@@ -731,6 +785,7 @@ Supported options:
   -t <email>     The notification destination email address. Required unless -l.
   -e <cvs>       Location of CVS executable. Defaults to "cvs" (i.e., in path).
   -d             Include the diffs for all the files processed.
+  -j             Location of diff executable. Defaults to "diff" (i.e., in path).
   -o <opts>      Otions to pass to diff command.
   -a             Attach the diffs to the message.
   -r <email>     Reply-to address.
@@ -738,12 +793,17 @@ Supported options:
   -i             Ignore imports.
   -m <message>   Optional message to put at the beginning of the email subject.
   -p             Add the name of the CVS module to the message subject.
+  -S             Add the lowest common directory name to the subject.
   -s <sendmail>  Location of sendmail.
   -u <email>     User email address from which email should be sent.
   -g             Use \$USER environment variable to group collection of commits.
+  -M <size>      Maximum size of emailed messages in kilobytes.
   -H             Use HTML for generated emails.
   -w <url>       Include links to specified cvsweb url in generated email.
-  -h             Print this usage statement.
+  -B <list>      Space-delimited list of (binary) file name extensions that should
+                 not be diffed.
+  -v             Print the version number and exit.
+  -h             Print this usage statement and exit.
   -D             Debug mode.
 
 };
@@ -856,7 +916,7 @@ unless -l.
 
 The email address or addresses to send notifications to. Required unless -l.
 
-=item -e
+=item -e <cvs>
 
 Location of the CVS executable, e.g., F</usr/bin/cvs>. Defaults to F<cvs>, thus
 assuming that the cvs executable is in the path.
@@ -865,6 +925,12 @@ assuming that the cvs executable is in the path.
 
 Include the diffs for all the files processed. These will be appended to the
 notification message unless the -a option has been specified.
+
+=item -j <diff>
+
+Location of the diff executable, e.g., F</usr/bin/diff>. Defaults to F<diff>,
+thus assuming that the cvs executable is in the path. Used only for comparing
+added and delited files to F</dev/null>.
 
 =item -o <diff options>
 
@@ -903,6 +969,11 @@ An optional message to put at the beginning of the email subject.
 
 Optional argument to add the name of the CVS module to the message subject.
 
+=item -S
+
+Optional attempt give the file name or lowest common directory name. Used only
+in commit mode.
+
 =item -s <sendmail>
 
 Location of sendmail. If not specified, activitymail will search for sendmail
@@ -925,14 +996,32 @@ C<:pserver:>, since the usual method of collecting transactions -- by relying
 on the value returned by C<pgrp>, won't work. Use in both the F<commitinfo>
 and L<loginfo> files, or else it won't work at all!
 
+=item -M <size>
+
+Max length for email messages, in kilobytes. If an email greater than this
+size would be sent then an error message is printed to the user's terminal,
+instead. This option is useful if your repository contains large binary files
+not prevented from be diffed by C<-B>, or when adding many files at once.
+In those cases, failing to use this option may result in broken mail clients.
+
 =item -H
 
-Generate HTML emails.  The MIME content-type of the email is set to
-text/html, and some basic HTML formatting tags are introduced.
+Generate HTML emails. The Content-Type header will be set to "text/html" and
+some basic HTML formatting tags used for the display of the commit message.
 
 =item -w <url>
 
-Include links to specified cvsweb URL for convenience.
+Include links to specified CVSWeb URL for the diffs for each file. Most useful
+with the C<-H> option.
+
+=item -B <list>
+
+Binary file extension list. activitymail does its best to prevent binary files
+from being diffed by using the Perl C<-B> operator to check for binary
+files. However, this approach doesn't catch all binary files. If you find that
+activitymail is diffing binary files, use this option to specify a
+space-delimited list of file name extensions on the binary files that you want
+activitymail to skip.
 
 =item -h
 
