@@ -1,9 +1,10 @@
 Revision history for activitymail.
 
-1.18
+1.18   2004-03-03T01:41:16
        - Slightly safer handling of directory names with spaces.
        - Changed some error messages to properly report when activitymail
          fails to open a file for reading rather than writing.
+       - Added To Do section. Patches welcome.
 
 1.17   2004-03-03T00:55:30
        - Better handling of file names and directory names with spaces in
