@@ -1,13 +1,14 @@
 #!/usr/bin/perl -w
 
-# $Id: activitymail,v 1.11 2002/08/01 23:16:02 david Exp $
+# $Id: activitymail,v 1.12 2002/09/10 23:35:09 david Exp $
 
 use strict;
 use Getopt::Std;
 use File::Basename qw(basename dirname);
 use vars qw($VERSION);
 
-$VERSION = '1.03';
+$VERSION = '1.04';
+$|++;
 
 ##############################################################################
 # Set up catdir and tmpdir. Hopefully we can just use File::Spec::Functions
