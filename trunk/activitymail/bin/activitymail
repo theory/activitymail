@@ -35,9 +35,9 @@ BEGIN {
     # Get the command-line arugments.
     use vars qw($opt_f $opt_r $opt_l $opt_m $opt_t $opt_n $opt_i $opt_p $opt_c
                 $opt_s $opt_h $opt_d $opt_a $opt_D $opt_o $opt_e $opt_u $opt_g
-                $opt_w $opt_H $opt_B $opt_j $opt_M $opt_S $opt_v $opt_V
+                $opt_w $opt_H $opt_B $opt_j $opt_M $opt_S $opt_v $opt_V $opt_N
                );
-    getopts('f:lr:m:t:nipcs:dhaDo:e:u:gw:HB:j:M:SvV');
+    getopts('f:lr:m:t:nipcs:dhaDo:e:u:gw:HB:j:M:SvVN:');
 }
 
 ##############################################################################
@@ -56,9 +56,10 @@ $SIG{CHLD} = 'IGNORE';
 my $tmpdir = tmpdir();
 my $pgrp = $opt_g ? $ENV{USER} : getpgrp;
 
-# Determine location of CVS and diff binaries.
+# Determine location of CVS and diff binaries and of the null file.
 $opt_e ||= 'cvs';
 $opt_j ||= 'diff';
+$opt_N ||= '/dev/null';
 
 # This hash will be used in several of the functions below.
 my %map = ( mod => 'Modified Files',
@@ -352,19 +353,19 @@ sub get_diffs {
             # It's a new file.
             if (-e $file) {
                 # Compare to /dev/null.
-                $diffs .= `$opt_j $opt_o -L '/dev/null' '/dev/null' -L $fn '$file'`;
+                $diffs .= `$opt_j $opt_o -L '$opt_N' '$opt_N' -L $fn '$file'`;
             } else {
                 # Otherwise, read the file from a non-changing update and pipe
                 # that to diff.
-                $diffs .= `$opt_e -fn update -r $r2 -p $file | $opt_j $opt_o -L '/dev/null' '/dev/null' -L '$fn' -`;
+                $diffs .= `$opt_e -fn update -r $r2 -p $file | $opt_j $opt_o -L '$opt_N' '$opt_N' -L '$fn' -`;
             }
         } elsif ($r2 eq 'NONE') {
             # The file has been deleted. Read it from a non-changing update
             # and pipe it to diff.
-            $diffs .= `$opt_e -fn update -r $r1 -p $file | $opt_j $opt_o -L '$fn' - -L '/dev/null' '/dev/null'`;
+            $diffs .= `$opt_e -fn update -r $r1 -p $file | $opt_j $opt_o -L '$fn' - -L '$opt_N' '$opt_N'`;
         } else {
             # We actually have CVS diff the two versions.
-            $diffs .= `$opt_e -f diff -kk -L $fn $opt_o -r $r1 -r $r2 '$file'`;
+            $diffs .= `$opt_e -f diff -kk -L $fn -L $fn $opt_o -r $r1 -r $r2 '$file'`;
         }
     }
     return $diffs;
@@ -805,6 +806,7 @@ Supported options:
   -e <cvs>       Location of CVS executable. Defaults to "cvs" (i.e., in path).
   -d             Include the diffs for all the files processed.
   -j             Location of diff executable. Defaults to "diff" (i.e., in path).
+  -N <file>      Location of the null file. Defaults to "/dev/null".
   -o <opts>      Otions to pass to diff command.
   -a             Attach the diffs to the message.
   -r <email>     Reply-to address.
@@ -951,6 +953,13 @@ notification message unless the -a option has been specified.
 Location of the diff executable, e.g., F</usr/bin/diff>. Defaults to F<diff>,
 thus assuming that the cvs executable is in the path. Used only for comparing
 added and delited files to F</dev/null>.
+
+=item -N <file>
+
+Location of the null file. Defaults to F</dev/null>. This file will be used to
+diff against deleted and added files. In most cases this option can be left to
+the default, but Win32 systems, for example, will need to change it to F<NUL>
+or some such.
 
 =item -o <diff options>
 
