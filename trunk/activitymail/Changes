@@ -4,6 +4,8 @@ Revision history for activitymail.
        - Full directory name to files within the repository is now correctly
          included in the diff headers. In 1.12, only the last directory in
          the full directory path was included.
+       - Made all HTML emails complete HTML messages, complete with DOCTYPE
+         declaration.
 
 1.12   Mon Sep  8 17:57:50 2003
        - Documented -V option. Thanks to Hernan Otero for the spot.

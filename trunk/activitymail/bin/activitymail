@@ -164,7 +164,7 @@ sub parse_file_list {
                 # Set up the multipart/mixed boundary for HTML email.
                 boundary($sub) if $opt_a;
                 mail($sub, $opt_H
-                     ? \"<pre>${\slurp_file()}</pre>\n"
+                     ? \"${\xhtml_header()}<pre>${\slurp_file()}</pre>${\xhtml_footer()}"
                      : \slurp_file() );
             }
         }
@@ -195,7 +195,8 @@ sub syncmail {
         # Set up the multipart/mixed boundary and turn the body of the message
         # into HTML.
         boundary($subject) if $opt_a;
-        $body = "<pre>$body</pre>\n" if $opt_H;
+        $body = "${\xhtml_header()}<pre>$body</pre>${\xhtml_footer()}\n"
+          if $opt_H;
     }
     if ($opt_d) {
         # We want diffs. So we have to fork.
@@ -624,7 +625,7 @@ sub build_text_msg {
 
 sub build_html_msg {
     my ($msg, $files, $revs, $subject) = @_;
-    $msg = "<body>\n<h3>Log Message</h3>\n\n<pre>$msg</pre>\n\n";
+    $msg = xhtml_header() . "<h3>Log Message</h3>\n\n<pre>$msg</pre>\n\n";
 
     # Add any tags.
     $msg .= "<h3>Tags:</h3>\n<ul>\n  <li>" .
@@ -656,7 +657,7 @@ sub build_html_msg {
             my $nm = basename($f);
             my $dir = $curdir;
             $dir =~ s|^$ENV{CVSROOT}/?||;
-            $msg .= "<li>";
+            $msg .= "  <li>";
             my $url = $opt_w ? "$opt_w$dir/$nm" : '';
             if ($type eq 'mod') {
                 $url .= ".diff?r1=$old&r2=$new";
@@ -669,8 +670,25 @@ sub build_html_msg {
         }
         $msg .= "</ul>\n";
     }
+    $msg .= xhtml_footer();
     return \$msg;
 }
+
+##############################################################################
+# These functions create the appropriate XHTML header and footer.
+##############################################################################
+sub xhtml_header {
+    q{<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+</head>
+<body>
+};
+}
+
+sub xhtml_footer { "</body>\n</html>\n" }
 
 ##############################################################################
 # This function saves the file and diff data to log files so that the data can
