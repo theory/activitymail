@@ -1,0 +1,86 @@
+Revision history for activitymail.
+
+1.11
+       - Updated information and links to other CVS notification applications.
+       - Simple status messages (new directories, imports) and syncmail mode
+         once again send email message bodies.
+       - Simple status messages and syncmail mode now send HTML email if
+         the -H option has been passed.
+
+1.10   Wed Aug 27 23:25:21 2003
+       - Added empty lines between the text of the commit message and the
+         attached diff. This looks neater in mail clients that display
+         attachments inline.
+       - Added -H option sending HTML email. Thanks to Hernan Otero for
+         the initial implementation.
+       - Added -V option to include revision numbers after each listed file.
+         Thanks to Hernan Otero for the initial implementation.
+       - Cut down on the number of times that data is copied in the script,
+         thus reducing processing time and memory requirements, especially
+         on big commits.
+       - Added -w option for a link to a CVSWeb view of the diff for each
+         changed file. Actually looks best when used with HTML. Thanks to
+         Hernan Otero for the initial implementation.
+       - Added check for binary files so that they won't be diffed.
+       - Added -B option to specify a list of binary file name extensions
+         to indicate files that should not be diffed.
+       - New files and deleted files are now diffed against /dev/null in
+         order to provide a more realistic diff.
+       - Added -j option to point to a diff executable to compare added and
+         deleted files. Defaults to "diff", assuming that it's in the path.
+       - Added -M option to prevent messages over a maximum size from being
+         emailed. Thanks to Sam Tregar.
+       - Added -S option to add directory context information to the subject.
+         Thanks to Kent Lindquist.
+       - Branch tags are now listed in the email under their own header.
+         Suggested by David Krembs.
+       - Added -v option to print the version number.
+       - Added POD tests.
+       - Switched to Module::Build for installation.
+
+1.04   2002-11-10 22:58:36
+       - Turned off output buffering, which will hopefully allow status
+         messages to be printed as they happen.
+       - Added "X-Mailer" header to mail messages, so that people who see
+         activitymail messages in archives and such and want to know how
+         they were created will be able to find activitymail.
+
+1.03   2002-08-05 18:34:51
+       - Added -e option so that the cvs executable can be specified.
+       - Added -u option to specify the From header of email messages.
+       - Added -g option to use $USER environment variable for grouping
+         commit transactions. Useful for connecting via :pserver:, where
+         grouping via pgrp won't work. Thanks to Derek Scherger for suggesting
+         these last three changes.
+       - Added "Bugs" section to documentation with a link to the CPAN Request
+         Tracker
+       - Changed example domains in documentation to "example.com".
+
+1.02   2002-06-30 19:16:03
+       - Fixed problem with global filehandles getting closed in the wrong
+         places, thanks to Scott Lanning.
+       - Created distribution package so that activitymail can be properly
+         installed on a system.
+
+1.01   2002-05-22 20:58:41
+       - Added -o option so that diff options can be passed through to diff.
+       - Untabified and rewraped source code.
+       - Updated documentation and corrected typos.
+
+1.00   2002-04-08 23:47:51
+       - Fixed issues with precidence opening files and such, with thanks to
+         Sam Tregar.
+      
+0.99   2002-01-22 00:07:12
+       - Changed transfer encoding from quoted-printable to 8bit, with thanks
+         to Sam Tregar.
+      
+0.987  2002-01-20 16:05:54
+       - Added MIME-Version header, with thanks to Sam Tregar.
+       - Documented issues with forking.
+
+0.986  2002-01-11 19:09:58
+       - Renamed tmp_file_basename() to tmp_base_name().
+       - Updated comments and ranamed tmp_file_only().
+       - Removed debugging. No more glob()!
+       - Initial release to the CPAN.
