@@ -6,8 +6,8 @@ Revision history for activitymail.
          attachments inline.
        - Added -H option sending HTML email. Thanks to Hernan Otero for
          the initial implementation.
-       - Added revision numbers after each listed file. Thanks to Hernan
-         Otero for the initial implementation.
+       - Added -V option to include revision numbers after each listed file.
+         Thanks to Hernan Otero for the initial implementation.
        - Cut down on the number of times that data is copied in the script,
          thus reducing processing time and memory requirements, especially
          on big commits.
