@@ -3,7 +3,7 @@
 eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
     if 0; # not running under some shell
 
-# $Id: activitymail,v 1.16 2003/08/27 23:18:37 david Exp $
+# $Id: activitymail,v 1.17 2003/08/27 23:24:11 david Exp $
 
 use strict;
 use Getopt::Std;
@@ -34,9 +34,9 @@ BEGIN {
     # Get the command-line arugments.
     use vars qw($opt_f $opt_r $opt_l $opt_m $opt_t $opt_n $opt_i $opt_p $opt_c
                 $opt_s $opt_h $opt_d $opt_a $opt_D $opt_o $opt_e $opt_u $opt_g
-                $opt_w $opt_H $opt_B $opt_j $opt_M $opt_S $opt_v
+                $opt_w $opt_H $opt_B $opt_j $opt_M $opt_S $opt_v $opt_V
                );
-    getopts('f:lr:m:t:nipcs:dhaDo:e:u:gw:HB:j:M:Sv');
+    getopts('f:lr:m:t:nipcs:dhaDo:e:u:gw:HB:j:M:SvV');
 }
 
 ##############################################################################
@@ -595,10 +595,10 @@ sub build_text_msg {
             my $url = $opt_w ? "$opt_w$dir/$nm" : '';
             if ($type eq 'mod') {
                 $url .= ".diff?r1=$old&r2=$new";
-                $nm .= " (r$old -> r$new)";
+                $nm .= " (r$old -> r$new)" if $opt_V;
             } elsif ($type eq 'add') {
                 $url .= "?rev=$new&content-type=text/x-cvsweb-markup";
-                $nm .= " (r$new)";
+                $nm .= " (r$new)" if $opt_V;
             }
             $msg .= "$nm\n";
             $msg .= "        ($url)\n" if $opt_w;
@@ -645,10 +645,10 @@ sub build_html_msg {
             my $url = $opt_w ? "$opt_w$dir/$nm" : '';
             if ($type eq 'mod') {
                 $url .= ".diff?r1=$old&r2=$new";
-                $nm .= " (r$old -> r$new)";
+                $nm .= " (r$old -> r$new)" if $opt_V;
             } elsif ($type eq 'add') {
                 $url .= "?rev=$new&content-type=text/x-cvsweb-markup";
-                $nm .= " (r$new)";
+                $nm .= " (r$new)" if $opt_V;
             }
             $msg .= ($opt_w ? qq{<a href="$url">$nm</a>} : $nm) . "</li>\n";
         }
