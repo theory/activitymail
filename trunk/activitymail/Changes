@@ -1,11 +1,17 @@
 Revision history for activitymail.
 
 1.16
-
        - Now only adding the version arguments to the CVSWeb diff URL if V has
          been specified. This makes it easier to use activitymail in
          environments where the CVSWeb server's checkout isn't fully
          up-to-date, such as at SourceForge. Suggested by Brad Clarke.
+       - Removed --minimal option from default value off the -o option, which
+         is a list of options to be passed through to diff. This is for
+         reasons of performance (see the diff man page for more on this). The
+         default value of -o is now simply "-u".
+       - Added support for directory names with spaces and commas.
+       - Removed discussion of forking from the known issues section. It seems
+         to work just fine the way it is.
 
 1.15   Wed Oct  8 18:00:32 2003
        - Branch tag information is now also included for commit messages sent
