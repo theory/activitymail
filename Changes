@@ -1,0 +1,30 @@
+Revision history for activitymail.
+
+1.02   2002-06-30 19:16:03
+       - Fixed problem with global filehandles getting closed in the wrong
+         places, thanks to Scott Lanning.
+       - Created distribution package so that activitymail can be properly
+         installed on a system.
+
+1.01   2002/05/22 20:58:41
+       - Added -o option so that diff options can be passed through to diff.
+       - Untabified and rewraped source code.
+       - Updated documentation and corrected typos.
+
+1.00   2002/04/08 23:47:51
+       - Fixed issues with precidence opening files and such, with thanks to
+         Sam Tregar.
+      
+0.99   2002/01/22 00:07:12
+       - Changed transfer encoding from quoted-printable to 8bit, with thanks
+         to Sam Tregar.
+      
+0.987  2002/01/20 16:05:54
+       - Added MIME-Version header,
+       - Documented issues with forking.
+
+0.986  2002/01/11 19:09:58
+       - Renamed tmp_file_basename() to tmp_base_name().
+       - Updated comments and ranamed tmp_file_only().
+       - Removed debugging. No more glob()!
+       - Initial release to the CPAN.
