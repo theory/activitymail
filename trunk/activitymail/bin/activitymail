@@ -148,9 +148,7 @@ sub parse_file_list {
 
     # Make sure we get the real full directory name -- that is, try to
     # compensate for directory names with commas and/or spaces.
-    while ($revs[0]
-           and $revs[0] ne '-'
-           and $revs[0] !~ /,(?:[\d.]+.\d|NONE),(?:[\d.].+\d|NONE)$/) {
+    until (-d catdir($ENV{CVSROOT}, $dir)) {
         $dir .= " " . shift @revs;
     }
 

@@ -13,6 +13,10 @@ An additional option allows for diffs to be calculated for the recent changes,
 and either appended to the message (like syncmail) or added as an attachment
 (neater). See the -d and -a options in the documentation.
 
+Unlike most other CVS activity notification applications, activitymail
+supports repository files and directories with spaces and commas in their
+names.
+
 INSTALLATION
 
 To install this module, type the following:
