@@ -1,13 +1,16 @@
 #!/usr/bin/perl -w
 
-# $Id: activitymail,v 1.13 2002/11/08 17:57:34 david Exp $
+eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
+    if 0; # not running under some shell
+
+# $Id: activitymail,v 1.14 2003/07/03 04:07:36 david Exp $
 
 use strict;
 use Getopt::Std;
 use File::Basename qw(basename dirname);
 use vars qw($VERSION);
 
-$VERSION = '1.04';
+$VERSION = '1.05';
 $|++;
 
 ##############################################################################
@@ -31,8 +34,9 @@ BEGIN {
     # Get the command-line arugments.
     use vars qw($opt_f $opt_r $opt_l $opt_m $opt_t $opt_n $opt_i $opt_p $opt_c
                 $opt_s $opt_h $opt_d $opt_a $opt_D $opt_o $opt_e $opt_u $opt_g
+                $opt_w $opt_H
                );
-    getopts('f:lr:m:t:nipcs:dhaDo:e:u:g');
+    getopts('f:lr:m:t:nipcs:dhaDo:e:u:gw:H');
 }
 
 ##############################################################################
@@ -51,10 +55,12 @@ $SIG{CHLD} = 'IGNORE';
 my $tmpdir = tmpdir();
 my $pgrp = $opt_g ? $ENV{USER} : getpgrp;
 
-# Determin location of CVS binary.
+# Determine location of CVS binary.
 $opt_e ||= 'cvs';
 
-# These hashes will be used in several of the functions below.
+my $baseurl = $opt_w;
+
+# This hash will be used in several of the functions below.
 my %map = ( mod => 'Modified Files',
             add => 'Added Files',
             rem => 'Removed Files',
@@ -72,6 +78,9 @@ log_dir($ARGV[0]) if $opt_l;
 
 # Set the diffs option to its default.
 $opt_o ||= '-u --minimal';
+
+# Set the content type.
+$opt_H = $opt_H ? 'text/html' : 'text/plain';
 
 # Get the current working directory, the name of the repository module, and a
 # list of the files being revised in the current directory.
@@ -243,10 +252,14 @@ sub mail {
     print SENDMAIL "From: $opt_u\n" if $opt_u;
     print SENDMAIL "To: $opt_t\nSubject: $subject\n";
     print SENDMAIL "Reply-To: $opt_r\n" if $opt_r;
-    print SENDMAIL qq{Content-Type: multipart/mixed; boundary="$opt_a"\n\n}
-      . "--$opt_a\nContent-Type: text/plain\n" if $opt_a;
     print SENDMAIL "X-Mailer: activitymail $VERSION, " .
                    "http://search.cpan.org/dist/activitymail/\n";
+    if ($opt_a) {
+        print SENDMAIL qq{Content-Type: multipart/mixed; boundary="$opt_a"\n\n}
+          . "--$opt_a\nContent-Type: $opt_H\n";
+    } else {
+        print SENDMAIL "Content-Type: $opt_H\n";
+    }
     print SENDMAIL "\n$body";
     print SENDMAIL "--$opt_a--\n" if $opt_a;
     close SENDMAIL;
@@ -378,13 +391,13 @@ sub notify {
             # Grab the diffs for the latest files.
             $files->{rev} .= get_diffs($revs);
             my $subject = mk_subject($msg, $mod);
-            mail($subject, build_msg($msg, $files, $subject));
+            mail($subject, build_msg($msg, $files, $revs, $subject));
             exit;
         }
     } else {
         # No need for diffs. Just send it as is.
         $files = get_files($files);
-        mail(mk_subject($msg, $mod), build_msg($msg, $files));
+        mail(mk_subject($msg, $mod), build_msg($msg, $files, $revs));
         exit;
     }
     # Exit the parent process.
@@ -463,6 +476,18 @@ sub get_files {
     return $fetched;
 }
 
+sub get_revs {
+    my ($revs, $nm) = @_;
+    foreach (@$revs) {
+           # Get the file name and version numbers from the file spec.
+           my ($file, $old, $new) = split ',';
+        if ($file eq $nm) {
+            return ($old, $new);
+        }
+    }
+    return ('?', '?');
+}
+
 ##############################################################################
 # This function takes an existing message, a files href, and the message
 # suject as arguments, and returns a fully formatted message that includes the
@@ -470,8 +495,26 @@ sub get_files {
 ##############################################################################
 
 sub build_msg {
-    my ($msg, $files, $subject) = @_;
+    my ($msg, $files, $revs, $subject) = @_;
     DEBUG && dbpnt("Building message body.\n");
+    if ($opt_H) {
+        $msg = build_html_msg($msg, $files, $revs, $subject);
+    } else {
+        $msg = build_text_msg($msg, $files, $revs, $subject);
+    }
+
+    # Okay, now add the diffs.
+    if ($opt_d) {
+        # Make it either an attachment or inline, depending on -a.
+        $msg .= $opt_a ? attach($subject) : "\n$map{rev}\n" . '-' x length($map{rev}). "\n";
+        # Attach those diffs!
+        $msg .= $files->{rev};
+    }
+    return $msg;
+}
+
+sub build_text_msg {
+    my ($msg, $files, $revs, $subject) = @_;
     $msg = "Log Message:\n-----------\n$msg\n";
 
     # Create the lines that will go underneath the above in the message.
@@ -486,28 +529,90 @@ sub build_msg {
 
         # Grab the first directory name.
         my $lastdir = dirname($files->{$_}[0]);
+        $lastdir =~ s|^$ENV{CVSROOT}/?||;
         $msg .= "    $lastdir:\n";
 
         foreach my $f (@{ $files->{$_} }) {
             my $curdir = dirname($f);
+            $curdir =~ s|^$ENV{CVSROOT}/?||;
             if ($curdir ne $lastdir) {
                 # Different directory. Record that.
                 $lastdir = $curdir;
                 $msg .= "    $lastdir:\n";
             }
             # Record the name of the file altered.
-            $msg .= "        " . basename($f) . "\n";
+            $msg .= "        ";
+            # Record the name of the file altered.
+            my $nm = basename($f);
+            my $dir = $curdir;
+            $dir =~ s|^$ENV{CVSROOT}/?||;
+            my ($old, $new) = get_revs($revs, $nm);
+            my $url = $baseurl ? $baseurl . $dir . "/" . $nm : "";
+            if ($_ eq 'mod') {
+                $url .= ".diff?r1=" . $old . "&r2=" . $new;
+                $nm .= " (r$old -> r$new)";
+            } elsif ($_ eq 'add') {
+                $url .= "?rev=" . $new . "&content-type=text/x-cvsweb-markup";
+                $nm .= " (r$new)";
+            }
+            $msg .= $nm . "\n";
+            if ($baseurl) {
+                $msg .= "        (" . $url . ")\n";
+            }
         }
     }
-
-    # Okay, now add the diffs.
-    if ($opt_d) {
-        # Make it either an attachment or inline, depending on -a.
-        $msg .= $opt_a ? attach($subject) : "\n$map{rev}\n$dash{rev}\n";
-        # Attach those diffs!
-        $msg .= $files->{rev};
-    }
     return $msg;
+}
+
+sub build_html_msg {
+    my ($msg, $files, $revs, $subject) = @_;
+    $msg = "<font size=-2><strong>Log Message</strong></font><br>$msg<p><ul>";
+
+    foreach (qw(mod add rem)) {
+        # Skip it if there's nothing to report.
+        next unless @{ $files->{$_} };
+
+        # Identify the action.
+        $msg .= "<p>\n<li>$map{$_}<p><ul>";
+
+        # Grab the first directory name.
+        my $lastdir = dirname($files->{$_}[0]);
+        $lastdir =~ s|^$ENV{CVSROOT}/?||;
+        $msg .= "<p><li>$lastdir<p>\n<ul>";
+
+        foreach my $f (@{ $files->{$_} }) {
+            DEBUG && dbpnt("processing file $f\n");
+            my $curdir = dirname($f);
+            $curdir =~ s|^$ENV{CVSROOT}/?||;
+            if ($curdir ne $lastdir) {
+                # Different directory. Record that.
+                $lastdir = $curdir;
+                $msg .= "</ul>\n</li><p><li>$lastdir<p>\n<ul>";
+            }
+            # Record the name of the file altered.
+            my $nm = basename($f);
+            my $dir = $curdir;
+            $dir =~ s|^$ENV{CVSROOT}/?||;
+            $msg .= "<li>";
+            my ($old, $new) = get_revs($revs, $nm);
+            my $url = $baseurl ? $baseurl . $dir . "/" . $nm : "";
+            if ($_ eq 'mod') {
+                $url .= ".diff?r1=" . $old . "&r2=" . $new;
+                $nm .= " <font size=\"-2\">(r$old -> r$new)</font>";
+            } elsif ($_ eq 'add') {
+                $url .= "?rev=" . $new . "&content-type=text/x-cvsweb-markup";
+                $nm .= " <font size=\"-2\">(r$new)</font>";
+            }
+            if ($baseurl) {
+                $msg .= "<a href=\"$url\">" . $nm . "</a>";
+            } else {
+                $msg .= $nm;
+            }
+            $msg .= "\n</li>";
+        }
+        $msg .= "</ul>\n</li></ul>\n</li>";
+    }
+    $msg .= "</ul>\n";
 }
 
 ##############################################################################
@@ -636,6 +741,8 @@ Supported options:
   -s <sendmail>  Location of sendmail.
   -u <email>     User email address from which email should be sent.
   -g             Use \$USER environment variable to group collection of commits.
+  -H             Use HTML for generated emails.
+  -w <url>       Include links to specified cvsweb url in generated email.
   -h             Print this usage statement.
   -D             Debug mode.
 
@@ -817,6 +924,15 @@ environment variable. This is most useful for when connecting to CVS via
 C<:pserver:>, since the usual method of collecting transactions -- by relying
 on the value returned by C<pgrp>, won't work. Use in both the F<commitinfo>
 and L<loginfo> files, or else it won't work at all!
+
+=item -H
+
+Generate HTML emails.  The MIME content-type of the email is set to
+text/html, and some basic HTML formatting tags are introduced.
+
+=item -w <url>
+
+Include links to specified cvsweb URL for convenience.
 
 =item -h
 
