@@ -20,7 +20,7 @@ Revision history for activitymail.
          to Sam Tregar.
       
 0.987  2002/01/20 16:05:54
-       - Added MIME-Version header,
+       - Added MIME-Version header, with thanks to Sam Tregar.
        - Documented issues with forking.
 
 0.986  2002/01/11 19:09:58
