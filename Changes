@@ -1,5 +1,8 @@
 Revision history for activitymail.
 
+1.11
+       - Updated information and links to other CVS notification applications.
+
 1.10   Wed Aug 27 23:25:21 2003
        - Added empty lines between the text of the commit message and the
          attached diff. This looks neater in mail clients that display

@@ -1,4 +1,4 @@
-activitymail version 1.05
+activitymail version 1.11
 =========================
 
 This program may be used for sending email messages for CVS repository
@@ -28,6 +28,8 @@ This program requires these other modules and libraries:
 
   Getopt::Std
   File::Basename
+
+It also requires a CVS server and the diff package.
 
 RECOMMENDED
 
