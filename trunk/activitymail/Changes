@@ -5,8 +5,7 @@ Revision history for activitymail.
        - Now only adding the version arguments to the CVSWeb diff URL if V has
          been specified. This makes it easier to use activitymail in
          environments where the CVSWeb server's checkout isn't fully
-         up-to-date, such as at SourceForge. Suggested by an anonymous
-         SourceForge user.
+         up-to-date, such as at SourceForge. Suggested by Brad Clarke.
 
 1.15   Wed Oct  8 18:00:32 2003
        - Branch tag information is now also included for commit messages sent
