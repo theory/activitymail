@@ -19,9 +19,8 @@ Revision history for activitymail.
          to indicate files that should not be diffed.
        - New files and deleted files are now diffed against /dev/null in
          order to provide a more realistic diff.
-       - Added -j option to point to a diff executable to compare added
-         and deleted files. Defaults to "diff", assuming that it's in the
-         path.
+       - Added -j option to point to a diff executable to compare added and
+         deleted files. Defaults to "diff", assuming that it's in the path.
        - Added -M option to prevent messages over a maximum size from being
          emailed. Thanks to Sam Tregar.
        - Added -S option to add directory context information to the subject.
