@@ -1,5 +1,37 @@
 Revision history for activitymail.
 
+1.10
+       - Added empty lines between the text of the commit message and the
+         attached diff. This looks neater in mail clients that display
+         attachments inline.
+       - Added -H option sending HTML email. Thanks to Hernan Otero for
+         the initial implementation.
+       - Added revision numbers after each listed file. Thanks to Hernan
+         Otero for the initial implementation.
+       - Cut down on the number of times that data is copied in the script,
+         thus reducing processing time and memory requirements, especially
+         on big commits.
+       - Added -w option for a link to a CVSWeb view of the diff for each
+         changed file. Actually looks best when used with HTML. Thanks to
+         Hernan Otero for the initial implementation.
+       - Added check for binary files so that they won't be diffed.
+       - Added -B option to specify a list of binary file name extensions
+         to indicate files that should not be diffed.
+       - New files and deleted files are now diffed against /dev/null in
+         order to provide a more realistic diff.
+       - Added -j option to point to a diff executable to compare added
+         and deleted files. Defaults to "diff", assuming that it's in the
+         path.
+       - Added -M option to prevent messages over a maximum size from being
+         emailed. Thanks to Sam Tregar.
+       - Added -S option to add directory context information to the subject.
+         Thanks to Kent Lindquist.
+       - Branch tags are now listed in the email under their own header.
+         Suggested by David Krembs.
+       - Added -v option to print the version number.
+       - Added POD tests.
+       - Switched to Module::Build for installation.
+
 1.04   2002-11-10 22:58:36
        - Turned off output buffering, which will hopefully allow status
          messages to be printed as they happen.
