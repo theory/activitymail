@@ -1,6 +1,6 @@
 Revision history for activitymail.
 
-1.19
+1.19   2004-03-11T17:22:54
        - Added -q and -Q to suppress status messages. Suggested by Gary Meyer.
        - Added -E and -I to specify regular expressions to check before
          sending activity notifications for files. The regular expressions
