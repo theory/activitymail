@@ -14,8 +14,8 @@ $VERSION = '1.12';
 $|++;
 
 ##############################################################################
-# Set up catdir and tmpdir. Hopefully we can just use File::Spec::Functions
-# and not worry about it.
+# Set up catdir, catfile, splitdir and tmpdir. Hopefully we can just use
+# File::Spec::Functions and not worry about it.
 ##############################################################################
 
 BEGIN {
@@ -24,11 +24,12 @@ BEGIN {
     if ($@) {
         # Use simple Unix semantics.
         *catdir = sub { join '/', @_ };
+        *catfile = sub { join '/', @_ };
         *tmpdir = sub { '/tmp' };
         *splitdir = sub { split m|/|, $_[0] };
     } else {
         # Import the functions we'll need.
-        File::Spec::Functions->import(qw(catdir tmpdir splitdir));
+        File::Spec::Functions->import(qw(catdir catfile tmpdir splitdir));
     }
 
     # Get the command-line arugments.
@@ -141,8 +142,8 @@ sub tmp_base_name { "#cvs\.$_[0]\.$pgrp" }
 sub parse_file_list {
     # Get the directory, list of file specs, and the module name.
     my ($dir, @revs) = split ' ', shift;
-    my ($mod) = splitdir $dir;
-    DEBUG && dbpnt("Directory: '$dir'; Module: $mod\n");
+    my ($mod, $subdir) = splitdir $dir;
+    DEBUG && dbpnt("Directory: '$dir'; Subdir: '$subdir'; Module: $mod\n");
 
     if ($revs[0] eq '-') {
         # This is a special status message, not really a version update or
@@ -172,7 +173,8 @@ sub parse_file_list {
     my %revmap;
     for (@revs) {
         my ($file, $old, $new) = split ',';
-        $revmap{$file} = [$old, $new];
+        $revmap{$file} = [$old, $new,
+                          $subdir ? catfile($subdir, $file) : $file];
     }
 
     return ($mod, $dir, \%revmap);
@@ -344,24 +346,25 @@ sub get_diffs {
         if ($opt_B && $file =~ /([^.]*)$/) {
             next if $ignore{lc $1};
         }
+        my ($r1, $r2, $fn) = @$vers;
         # Okay, now process this sucker.
-        if ($vers->[0] eq 'NONE') {
+        if ($r1 eq 'NONE') {
             # It's a new file.
             if (-e $file) {
                 # Compare to /dev/null.
-                $diffs .= `$opt_j $opt_o '/dev/null' '$file'`;
+                $diffs .= `$opt_j $opt_o -L '/dev/null' '/dev/null' -L $fn '$file'`;
             } else {
                 # Otherwise, read the file from a non-changing update and pipe
                 # that to diff.
-                $diffs .= `$opt_e -fn update -r $vers->[1] -p $file | $opt_j $opt_o '/dev/null', -`;
+                $diffs .= `$opt_e -fn update -r $r2 -p $file | $opt_j $opt_o -L '/dev/null' '/dev/null' -L '$fn' -`;
             }
-        } elsif ($vers->[1] eq 'NONE') {
+        } elsif ($r2 eq 'NONE') {
             # The file has been deleted. Read it from a non-changing update
             # and pipe it to diff.
-            $diffs .= `$opt_e -fn update -r $vers->[0] -p $file | $opt_j $opt_o - '/dev/null'`;
+            $diffs .= `$opt_e -fn update -r $r1 -p $file | $opt_j $opt_o -L '$fn' - -L '/dev/null' '/dev/null'`;
         } else {
-            # We actually have to get a diff!
-            $diffs .= `$opt_e -f diff -kk $opt_o -r $vers->[0] -r $vers->[1] '$file'`;
+            # We actually have CVS diff the two versions.
+            $diffs .= `$opt_e -f diff -kk -L $fn $opt_o -r $r1 -r $r2 '$file'`;
         }
     }
     return $diffs;

@@ -2,6 +2,12 @@ Revision history for activitymail.
 
 1.12
        - Documented -V option. Thanks to Hernan Otero for the spot.
+       - Fixed file names in diffs against /dev/null so that they're properly
+         displayed in the diff headers.
+       - Removed a few superfluous commas from the diff shell commands.
+       - File names in diff headers are now full paths from the repository
+         root. This change should make it possible to actually apply the diff
+         from the root by simply doing `patch -p0 < activitymail.patch`.
 
 1.11   Fri Aug 29 16:53:25 2003
        - Updated information and links to other CVS notification applications.
