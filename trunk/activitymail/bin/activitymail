@@ -1240,6 +1240,13 @@ them all up into memory, but passing them directly to sendmail instead. This
 should dramatically lower the amount of memory activitymail takes up during a
 large commit.
 
+=item *
+
+Add a specification to allow messages to be sent only for commits in certain
+directories. I understand that L<commit_prep|commit_prep> and
+L<log_accum|log_accum> could do this, though I'm not sure how. At any rate,
+it'd certainly be useful for certain notification tasks.
+
 =back
 
 =head1 BUGS
