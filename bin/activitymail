@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: activitymail,v 1.12 2002/09/10 23:35:09 david Exp $
+# $Id: activitymail,v 1.13 2002/11/08 17:57:34 david Exp $
 
 use strict;
 use Getopt::Std;
@@ -245,6 +245,8 @@ sub mail {
     print SENDMAIL "Reply-To: $opt_r\n" if $opt_r;
     print SENDMAIL qq{Content-Type: multipart/mixed; boundary="$opt_a"\n\n}
       . "--$opt_a\nContent-Type: text/plain\n" if $opt_a;
+    print SENDMAIL "X-Mailer: activitymail $VERSION, " .
+                   "http://search.cpan.org/dist/activitymail/\n";
     print SENDMAIL "\n$body";
     print SENDMAIL "--$opt_a--\n" if $opt_a;
     close SENDMAIL;

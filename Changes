@@ -3,6 +3,9 @@ Revision history for activitymail.
 1.04
        - Turned off output buffering, which will hopefully allow status
          messages to be printed as they happen.
+       - Added "X-Mailer" header to mail messages, so that people who see
+         activitymail messages in archives and such and want to know how
+         they were created will be able to find activitymail.
 
 1.03   2002-08-05 2002 18:34:51
        - Added -e option so that the cvs executable can be specified.
