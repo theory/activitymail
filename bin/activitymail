@@ -1159,8 +1159,7 @@ option.
 
 =head1 BUGS
 
-Report all bugs via the CPAN Request Tracker at
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=activitymail>.
+Please send bug reports to <bug-activitymail@rt.cpan.org>.
 
 =head1 AUTHOR
 
