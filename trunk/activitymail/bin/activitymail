@@ -52,7 +52,8 @@ use constant SMLOCS => qw(/usr/lib/sendmail /usr/sbin/sendmail
                           /usr/ucblib/sendmail);
 
 # When we do forking to get diff files, we want to ignore the children.
-$SIG{CHLD} = 'IGNORE';
+sub REAPER { wait; $SIG{CHLD} = \&REAPER }
+$SIG{CHLD} = \&REAPER;
 
 # These will be used by tmp_file_name().
 my $tmpdir = tmpdir();
@@ -1336,9 +1337,12 @@ David Wheeler <david@wheeler.net>
 
 =head1 SEE ALSO
 
-L<syncmail|syncmail>, L<commit_prep|commit_prep>, L<log_accum|log_accum>.
-
 =over 4
+
+=item L<SVN::Notify|SVN::Notify>
+
+This is a port of activitymail to subversion. Only it's a B<lot> better. Check
+it out!
 
 =item CVSspam
 
