@@ -1,5 +1,8 @@
 Revision history for activitymail.
 
+1.18
+       - Slightly safer handling of directory names with spaces.
+
 1.17   2004-03-03T00:55:30
        - Better handling of file names and directory names with spaces in
          them. This broke when I added support for directory names with spaces
