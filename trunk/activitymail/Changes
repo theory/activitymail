@@ -1,6 +1,6 @@
 Revision history for activitymail.
 
-1.13
+1.13   Tue Sep  9 21:18:43 2003
        - Full directory name to files within the repository is now correctly
          included in the diff headers. In 1.12, only the last directory in
          the full directory path was included.
