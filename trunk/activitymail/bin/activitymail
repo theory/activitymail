@@ -213,7 +213,7 @@ sub parse_file_list {
         # Make sure the file is meant to be included.
         if ($opt_I) {
             for my $rx (@$opt_I) {
-                DEBUG && dbpnt("Including $path") if $path =~ /$rx/;
+                DEBUG && dbpnt("Including $path") if $path =~ $rx;
                 next REV unless $path =~ $rx;
             }
         }
@@ -221,7 +221,7 @@ sub parse_file_list {
         # Skip the file if it's meant to be excluded.
         if ($opt_E) {
             for my $rx (@$opt_E) {
-                DEBUG && dbpnt("Excluding $path") unless $path =~ /$rx/;
+                DEBUG && dbpnt("Excluding $path") unless $path =~ $rx;
                 next REV if $path =~ $rx;
             }
         }
