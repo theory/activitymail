@@ -6,11 +6,12 @@ eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
 # $Id$
 
 use strict;
+require 5.005;
 use Getopt::Std;
 use File::Basename qw(basename dirname);
 use vars qw($VERSION);
 
-$VERSION = '1.14';
+$VERSION = '1.13';
 $|++;
 
 ##############################################################################
@@ -141,6 +142,7 @@ sub tmp_base_name { "#cvs\.$_[0]\.$pgrp" }
 ##############################################################################
 
 sub parse_file_list {
+    DEBUG && dbpnt("File List: $_[0]\n");
     # Get the directory, list of file specs, and the module name.
     my ($dir, @revs) = split ' ', shift;
     my ($mod, @subdirs) = splitdir $dir;
@@ -173,8 +175,17 @@ sub parse_file_list {
     # If we get here, it's not a special status message, but a list of files
     # and revisions. So split them up into a hash.
     my %revmap;
-    for (@revs) {
-        my ($file, $old, $new) = split ',';
+    my $regex = qr/^(.*?)(?:,([\d.]+|NONE))?(?:,([\d.]+|NONE))?$/;
+    while (@revs) {
+        my $spec = shift @revs;
+        my ($file, $old, $new) = $spec =~ /$regex/;
+        # Handle file names with spaces.
+        until ($old or $new or not @revs) {
+            $spec = shift @revs;
+            (my ($f), $old, $new) = $spec =~ /$regex/;
+            $file .= " $f";
+        }
+        DEBUG && dbpnt("$file => $old => $new\n");
         $revmap{$file} = [$old, $new, catfile(@subdirs, $file)];
     }
 
@@ -250,10 +261,10 @@ sub modified_area {
     my $files = shift;
     my @filelist = (@{$files->{mod}}, @{$files->{add}}, @{$files->{rem}})
       or return '';
-    return basename(split /\s+/, $filelist[0]) . ': ' if @filelist == 1;
-    my $ret = dirname split /\s+/, shift @filelist;
+    return basename(split /,/, $filelist[0]) . ': ' if @filelist == 1;
+    my $ret = dirname split /,/, shift @filelist;
     for my $f (@filelist) {
-        my $dir = dirname split /\s+/, $f;
+        my $dir = dirname split /,/, $f;
         $ret = $dir if length $dir < length $ret;
     }
     # Strip out unnecessaries.
@@ -348,25 +359,31 @@ sub get_diffs {
         if ($opt_B && $file =~ /([^.]*)$/) {
             next if $ignore{lc $1};
         }
-        my ($r1, $r2, $fn) = @$vers;
         # Okay, now process this sucker.
+        my ($r1, $r2, $fn) = @$vers;
+        # CVS is too dumb to know that spaces in arguments to be passed to
+        # diff are okay when the whole argument is in quotation marks. It
+        # obviously does its own tokenizing, which is a bad idea. So we fake
+        # it by changing spaces to underscores. Simply delete this line if and
+        # when CVS fixes this bug.
+        $fn =~ s/\s+/_/g;
         if ($r1 eq 'NONE') {
             # It's a new file.
             if (-e $file) {
                 # Compare to /dev/null.
-                $diffs .= `$opt_j $opt_o -L '$opt_N' '$opt_N' -L $fn '$file'`;
+                $diffs .= `$opt_j $opt_o -L '$opt_N' '$opt_N' -L '$fn' '$file'`;
             } else {
                 # Otherwise, read the file from a non-changing update and pipe
                 # that to diff.
-                $diffs .= `$opt_e -fn update -r $r2 -p $file | $opt_j $opt_o -L '$opt_N' '$opt_N' -L '$fn' -`;
+                $diffs .= `$opt_e -fn update -r $r2 -p '$file' | $opt_j $opt_o -L '$opt_N' '$opt_N' -L '$fn' -`;
             }
         } elsif ($r2 eq 'NONE') {
             # The file has been deleted. Read it from a non-changing update
             # and pipe it to diff.
-            $diffs .= `$opt_e -fn update -r $r1 -p $file | $opt_j $opt_o -L '$fn' - -L '$opt_N' '$opt_N'`;
+            $diffs .= `$opt_e -fn update -r $r1 -p '$file' | $opt_j $opt_o -L '$fn' - -L '$opt_N' '$opt_N'`;
         } else {
             # We actually have CVS diff the two versions.
-            $diffs .= `$opt_e -f diff -kk -L $fn -L $fn $opt_o -r $r1 -r $r2 '$file'`;
+            $diffs .= `$opt_e -f diff -kk -L '$fn' -L '$fn' $opt_o -r $r1 -r $r2 '$file'`;
         }
     }
     return $diffs;
@@ -410,12 +427,18 @@ sub parse_stdin {
             $tags->{$1} = 1;
         } else {
             chomp;
-            push @{ $files->{$flag} },
-              ( map { catdir($ENV{CVSROOT}, $dir, $_) .
-                      " $revs->{$_}[0] $revs->{$_}[1]" } split) if $_;
+            next unless $_;
+            my @files = split;
+            while (my $f = shift @files) {
+                $f .= " " . shift @files until $revs->{$f} or not @files;
+                push @{ $files->{$flag} }, catdir($ENV{CVSROOT}, $dir, $f) .
+                  ",$revs->{$f}[0],$revs->{$f}[1]";
+                DEBUG && dbpnt("$f => $files->{$flag}[-1]\n");
+            }
         }
     }
-    # Make sure there're no carriage returns or spaces at the end of $msg.
+
+    # Make sure there are no carriage returns or spaces at the end of $msg.
     $msg =~ s/\s+$//s;
     # Turn the tags into an array.
     $tags = [ keys %$tags ] if $tags;
@@ -594,7 +617,9 @@ sub build_text_msg {
         $msg .= "    $lastdir:\n";
 
         for (@{ $files->{$type} }) {
-            my ($f, $old, $new) = split;
+            my ($new, $old, $f, @extras) = reverse split ',';
+            # Handle file names with commas.
+            $f = join ',', reverse(@extras), $f if @extras;
             my $curdir = dirname($f);
             $curdir =~ s|^$ENV{CVSROOT}/?||;
             if ($curdir ne $lastdir) {
@@ -644,7 +669,9 @@ sub build_html_msg {
         $msg .= "<h4>$lastdir</h4>\n<ul>\n";
 
         for (@{ $files->{$type} }) {
-            my ($f, $old, $new) = split;
+            my ($new, $old, $f, @extras) = reverse split ',';
+            # Handle file names with commas.
+            $f = join ',', reverse(@extras), $f if @extras;
             DEBUG && dbpnt("processing file $f\n");
             my $curdir = dirname($f);
             $curdir =~ s|^$ENV{CVSROOT}/?||;
@@ -882,7 +909,8 @@ and either appended to the message (like syncmail) or added as an attachment
 =head1 PREREQUISITES
 
 This script requires L<Getopt::Std|Getopt::Std> and
-L<File::Basename|File::Basename>. See L<"Known Issues"> for more information.
+L<File::Basename|File::Basename>. It also requires a CVS server and the
+F<diff> package. See L<"Known Issues"> for more information.
 
 =head1 COREQUISITES
 
@@ -1180,6 +1208,14 @@ File::Spec isn't installed (not uncommon, since it's a fairly recent addition
 to Perl -- SourceForge, for example, doesn't have it as of this writing),
 activitymail will assume very simple Unix semantics for creating file names,
 and will assume that C</tmp> is the temp directory.
+
+Files with spaces in them are supported by activitymail as of version 1.13.
+However, CVS has a bug that prevents it from properly F<diff>ing when it is
+passed arguments to be passed to F<diff> with spaces in them. Since we use the
+C<-L> option to F<diff> to pass in the complete file name to be put into the
+diff headers, this can lead to problems. So until CVS fixes this bug, any
+files with spaces in them will actually have their diff header file names with
+underscores substituted for spaces.
 
 The principal issue I'd like to eventually get worked out has to do with
 forking. This script forks a new process whenever it is called with the -d

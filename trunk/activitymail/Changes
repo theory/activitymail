@@ -1,6 +1,17 @@
 Revision history for activitymail.
 
 1.14
+       - Added support for file names with spaces. CVS has a bug that prevents
+         it from properly diffing when it is passed arguments to be passed to
+         diff with spaces in them. Since we use the -L option to diff to pass
+         in the complete file name to be put into the diff headers, this can
+         lead to problems. So until CVS fixes this bug, any files with spaces
+         in them will actually have their diff header file names with
+         underscores substituted for spaces. Inspired by a hacked version of
+         activitymail sent in by David Krembs.
+       - Added support for files with commas in them.
+       - Now require Perl 5.005 or later in order to use regular expression
+         objects.
 
 1.13   Tue Sep  9 21:18:43 2003
        - Full directory name to files within the repository is now correctly
