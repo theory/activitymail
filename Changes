@@ -9,6 +9,7 @@ Revision history for activitymail.
          these last three changes.
        - Added "Bugs" section to documentation with a link to the CPAN Request
          Tracker
+       - Changed example domains in documentation to "example.com".
 
 1.02   2002-06-30 19:16:03
        - Fixed problem with global filehandles getting closed in the wrong
