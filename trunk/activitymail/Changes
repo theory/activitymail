@@ -1,6 +1,8 @@
 Revision history for activitymail.
 
 1.15
+       - Branch tag information is now also included for commit messages sent
+         without diffs. Thanks to Bob Bradley for the fix.
 
 1.14   Wed Sep 10 05:29:14 2003
        - Added support for file names with spaces. CVS has a bug that prevents

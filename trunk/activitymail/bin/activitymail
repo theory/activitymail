@@ -490,7 +490,8 @@ sub notify {
     } else {
         # No need for diffs. Just send it as is.
         $files = get_files($files);
-        mail(mk_subject($msg, $mod, $files), build_msg($msg, $files, $revs));
+        my $subject = mk_subject($msg, $mod, $files);
+        mail($subject, build_msg($msg, $files, $revs, $subject, $tags));
         exit;
     }
     # Exit the parent process.
