@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+# $Id: activitymail,v 1.2 2002/06/30 18:42:16 david Exp $
+
 use strict;
 use Getopt::Std;
 use File::Basename qw(basename dirname);
