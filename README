@@ -15,7 +15,7 @@ and either appended to the message (like syncmail) or added as an attachment
 
 INSTALLATION
 
-To install this module type the following:
+To install this program type the following:
 
    perl Makefile.PL
    make
@@ -24,14 +24,14 @@ To install this module type the following:
 
 DEPENDENCIES
 
-This module requires these other modules and libraries:
+This program requires these other modules and libraries:
 
   Getopt::Std
   File::Basename
 
 RECOMMENDED
 
-This module works best but does not require these other modules and libraries.
+This program works best but does not require these other modules and libraries.
 
   File::Spec
 
@@ -39,5 +39,5 @@ COPYRIGHT AND LICENCE
 
 Copyright (c) 2002, David Wheeler. All Rights Reserved.
 
-This module is free software; you can redistribute it and/or modify it under the
-same terms as Perl itself.
+This program is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
