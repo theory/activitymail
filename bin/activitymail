@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: activitymail,v 1.7 2002/07/30 04:13:22 david Exp $
+# $Id: activitymail,v 1.8 2002/08/01 18:38:52 david Exp $
 
 use strict;
 use Getopt::Std;
@@ -29,8 +29,9 @@ BEGIN {
 
     # Get the command-line arugments.
     use vars qw($opt_f $opt_r $opt_l $opt_m $opt_t $opt_n $opt_i $opt_p $opt_c
-                $opt_s $opt_h $opt_d $opt_a $opt_D $opt_o $opt_e);
-    getopts('f:lr:m:t:nipcs:dhaDo:b:');
+                $opt_s $opt_h $opt_d $opt_a $opt_D $opt_o $opt_e $opt_u $opt_g
+               );
+    getopts('f:lr:m:t:nipcs:dhaDo:e:u:g');
 }
 
 ##############################################################################
@@ -47,7 +48,7 @@ $SIG{CHLD} = 'IGNORE';
 
 # These will be used by tmp_file_name().
 my $tmpdir = tmpdir();
-my $pgrp = getpgrp;
+my $pgrp = $opt_g ? $ENV{USER} : getpgrp;
 
 # Determin location of CVS binary.
 $opt_e ||= 'cvs';
@@ -238,6 +239,7 @@ sub mail {
     open(SENDMAIL, "|$opt_s -oi -t")
       or mydie("Cannot fork for sendmail: $!\n");
     print SENDMAIL "MIME-Version: 1.0\n";
+    print SENDMAIL "From: $opt_u\n" if $opt_u;
     print SENDMAIL "To: $opt_t\nSubject: $subject\n";
     print SENDMAIL "Reply-To: $opt_r\n" if $opt_r;
     print SENDMAIL qq{Content-Type: multipart/mixed; boundary="$opt_a"\n\n}
@@ -629,6 +631,8 @@ Supported options:
   -m <message>   Optional message to put at the beginning of the email subject.
   -p             Add the name of the CVS module to the message subject.
   -s <sendmail>  Location of sendmail.
+  -u <user>      User email address from which email should be sent.
+  -g             Use -u to group collection of commits into one message.
   -h             Print this usage statement.
   -D             Debug mode.
 
@@ -794,6 +798,20 @@ Location of sendmail. If not specified, activitymail will search for sendmail
 in the following locations: C</usr/lib/sendmail>. C</usr/sbin/sendmail>,
 C</usr/ucblib/sendmail>. If activitymail cannot find sendmail, it'll throw an
 exception.
+
+=item -u <user email>
+
+Email address to use in the From header of the commit email message. Typical
+usage is to use the CVS C<$USER> variable to specify an address, e.g., C<-u
+${USER}@example.com>. Default is to provide no From header and to let Sendmail
+do it.
+
+=item -g
+
+Group collection of CVS transactions in a single commit by the C<$USER>
+environment variable. This is most useful for when connecting to CVS via
+C<:pserver:>, since the usual method of collecting transactions -- by relying
+on the value returned by C<pgrp>, won't work.
 
 =item -h
 
