@@ -64,6 +64,9 @@ $opt_j ||= 'diff';
 $opt_N ||= '/dev/null';
 $opt_q ||= $opt_Q;
 
+# Make sure that both $opt_I and $opt_E are not speciied.
+mydie("Cannot specify both -I and -E.\n") if $opt_I && $opt_E;
+
 # This hash will be used in several of the functions below.
 my %map = ( mod => 'Modified Files',
             add => 'Added Files',
@@ -219,7 +222,7 @@ sub parse_file_list {
         if ($opt_E) {
             for my $rx (@$opt_E) {
                 DEBUG && dbpnt("Excluding $path") unless $path =~ /$rx/;
-                next REV if $path =~ /$rx/;
+                next REV if $path =~ $rx;
             }
         }
 
@@ -929,7 +932,7 @@ Supported options:
   -I <regexen>   Space-delimited list of regular expressions to include files.
   -E <regexen>   Space-delimited list of regular expressions to exclude files.
   -q             Quiet mode.
-  -Q             Very quiety mode.
+  -Q             Very quiet mode.
   -v             Print the version number and exit.
   -h             Print this usage statement and exit.
   -D             Debug mode.
@@ -1168,18 +1171,14 @@ activitymail to skip.
 A space delimited list of regular expressions identifying the files to include
 in the processing of the commit message. Use C<\s> in place of literal
 spaces. The file name checked by the regular expression will be relative to
-the CVS module root. If both the C<-I> and C<-E> options are specified, then
-files that match an expression in both will be excluded, and files that match
-an expression in neither will also be excluded.
+the CVS module root. Cannot be used in combination with C<-E>.
 
 =item -E <regexen>
 
 A space delimited list of regular expressions identifying the files to exclude
 from the processing of the commit message. Use C<\s> in place of literal
 spaces. The file name checked by the regular expression will be relative to
-the CVS module root. If both the C<-I> and C<-E> options are specified, then
-files that match an expression in both will be excluded, and files that match
-an expression in neither will also be excluded.
+the CVS module root. Cannot be used in combination with C<-I>.
 
 =item -q
 
