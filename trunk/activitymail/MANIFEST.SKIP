@@ -5,4 +5,5 @@
 \.bak$
 ^MANIFEST\.SKIP$
 ^activitymail
+^www
 CVS
