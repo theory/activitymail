@@ -524,7 +524,7 @@ sub get_files {
             DEBUG && dbpnt("Grabbing $map{$flag} from '$file'\n");
             local *FILE;
             open FILE, "<$file"
-              or mydie("Cannot open '$file' for writing: $!\n");
+              or mydie("Cannot open '$file' for reading: $!\n");
             while (<FILE>) {
                 chomp;
                 push @{ $fetched->{$flag} }, $_;
@@ -566,7 +566,7 @@ sub get_files {
         $file = catdir($tmpdir, $file);
         DEBUG && dbpnt("Grabbing $map{rev} from '$file'\n");
         local *FILE;
-        open FILE, "<$file" or mydie("Cannot open '$file' for writing: $!\n");
+        open FILE, "<$file" or mydie("Cannot open '$file' for reading: $!\n");
         local $/;
         $fetched->{rev} .= <FILE>;
         close FILE;
