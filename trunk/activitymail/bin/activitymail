@@ -143,8 +143,9 @@ sub tmp_base_name { "#cvs\.$_[0]\.$pgrp" }
 sub parse_file_list {
     # Get the directory, list of file specs, and the module name.
     my ($dir, @revs) = split ' ', shift;
-    my ($mod, $subdir) = splitdir $dir;
-    DEBUG && dbpnt("Directory: '$dir'; Subdir: '$subdir'; Module: $mod\n");
+    my ($mod, @subdirs) = splitdir $dir;
+    DEBUG && dbpnt("Directory: '$dir'; Subdir: '" . catdir(@subdirs) .
+                   "'; Module: $mod\n");
 
     if ($revs[0] eq '-') {
         # This is a special status message, not really a version update or
@@ -174,8 +175,7 @@ sub parse_file_list {
     my %revmap;
     for (@revs) {
         my ($file, $old, $new) = split ',';
-        $revmap{$file} = [$old, $new,
-                          $subdir ? catfile($subdir, $file) : $file];
+        $revmap{$file} = [$old, $new, catfile(@subdirs, $file)];
     }
 
     return ($mod, $dir, \%revmap);
