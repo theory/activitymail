@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: Makefile.PL,v 1.2 2002/06/30 18:31:30 david Exp $
+# $Id: Makefile.PL,v 1.3 2002/06/30 19:03:55 david Exp $
 
 use strict;
 use ExtUtils::MakeMaker;
@@ -11,8 +11,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     NAME          => 'activitymail',
     VERSION_FROM  => 'bin/activitymail',
-    PREREQ_PM     => {'File::Spec' => 0,
-                      'Getopt::Std' => 0,
+    PREREQ_PM     => {'Getopt::Std' => 0,
                       'File::Basename' => 0
                      },
     EXE_FILES     => ['bin/activitymail'],
