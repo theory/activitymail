@@ -1,5 +1,7 @@
 Revision history for activitymail.
 
+1.19
+
 1.18   2004-03-03T01:41:16
        - Slightly safer handling of directory names with spaces.
        - Changed some error messages to properly report when activitymail
