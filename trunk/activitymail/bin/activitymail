@@ -396,12 +396,14 @@ sub get_diffs {
     my $diffs = '';
     # Initialize hash of binary file name extesions.
     my %ignore = $opt_B ? (map { lc $_ => 1 } split /\s+/, $opt_B) : ();
+    DEBUG && dbpnt("Will ignore", join (', ', keys %ignore), "\n");
     # Change into the first directory.
     while (my ($file, $vers) = each %$revs) {
         # Skip binary files.
         next if -B $file;
         # Skip any from the list passed by the user.
         if ($opt_B && $file =~ /\.([^.]+)$/) {
+            DEBUG && dbpnt("Ignore $1? ", $ignore{$1} ? "Yes\n" : "No\n");
             next if $ignore{lc $1};
         }
         # Okay, now process this sucker.
