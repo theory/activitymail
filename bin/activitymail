@@ -3,7 +3,7 @@
 eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
     if 0; # not running under some shell
 
-# $Id: activitymail,v 1.18 2003/08/28 14:49:44 david Exp $
+# $Id$
 
 use strict;
 use Getopt::Std;
@@ -1193,7 +1193,7 @@ L<http://ccvs.cvshome.org/source/browse/ccvs/contrib/commit_prep.in>.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2002-2003, David Wheeler. All Rights Reserved.
+Copyright (c) 2002-2004, David Wheeler. All Rights Reserved.
 
 This program is free software; you can redistribute it and/or modify it under
 the same terms as Perl.
