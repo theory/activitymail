@@ -1,14 +1,14 @@
 --- #YAML:1.0
 name: activitymail
-version: 1.16
+version: 1.17
+author:
+  - David Wheeler <david@wheeler.net>
+abstract: CVS activity notification
 license: perl
-distribution_type: module
 requires:
   File::Basename: 0
   Getopt::Std: 0
 recommends:
   File::Spec: 0
-build_requires: {}
-conflicts: {}
 provides: {}
-generated_by: Module::Build version 0.20
+generated_by: Module::Build version 0.24
