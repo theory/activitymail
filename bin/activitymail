@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: activitymail,v 1.8 2002/08/01 18:38:52 david Exp $
+# $Id: activitymail,v 1.9 2002/08/01 19:19:53 david Exp $
 
 use strict;
 use Getopt::Std;
@@ -613,7 +613,7 @@ sub usage {
     print qq{
 Usage: $exe -l
 
-       $exe -f %{sVv} -t admins\@my_project.null [options]
+       $exe -f %{sVv} -t admins\@example.com [options]
 
 Supported options:
 
@@ -653,7 +653,7 @@ activitymail - CVS activity notification.
   DEFAULT $CVSROOT/CVSROOT/activitymail -l
 
   # In loginfo:
-  DEFAULT $CVSROOT/CVSROOT/activitymail -dacf %{sVv} -t admins@my_project.null
+  DEFAULT $CVSROOT/CVSROOT/activitymail -dacf %{sVv} -t admins@example.com
 
 =head1 DESCRIPTION
 
@@ -701,20 +701,20 @@ Add activitymail to the checkoutlist file.
 =item 4.
 
 If you plan to use commit mode (see L<"Commit Mode"> below), add a call (or
-calls) to activitymail with the -l argument to commitinfo. Read the CVS docs
-to determine the format for this file, and to decide which repositories for
-which you want it run. Here's an example:
+calls) to activitymail with the -l argument to the F<commitinfo> file. Read
+the CVS docs to determine the format for this file, and to decide which
+repositories for which you want it run. Here's an example:
 
   DEFAULT $CVSROOT/CVSROOT/activitymail -l
 
 =item 5.
 
-Add a call (or calls) to activitymail to loginfo. Note that the -f and -t
-arguments are required here. Use the -c argument if you're running commit mode
-(i.e., you've added a call with -l to commitinfo -- see L<"Commit Mode">
-below). Here's an example:
+Add a call (or calls) to activitymail to the F<loginfo> file. Note that the -f
+and -t arguments are required here. Use the -c argument if you're running
+commit mode (i.e., you've added a call with -l to the F<commitinfo> file --
+see L<"Commit Mode"> below). Here's an example:
 
-  DEFAULT $CVSROOT/CVSROOT/activitymail -cf %{sVv} -t admins@my_project.null
+  DEFAULT $CVSROOT/CVSROOT/activitymail -cf %{sVv} -t admins@example.com
 
 =item 6.
 
@@ -728,13 +728,14 @@ Commit your changes to CVSROOT.
 
 =item -l
 
-Directory logging mode. Use this mode in commitinfo to log the current
-directory. Best if used with -c in loginfo -- otherwise it's just a waste.
+Directory logging mode. Use this mode in the F<commitinfo> file to log the
+current directory. Best if used with -c in the F<loginfo> file -- otherwise
+it's just a waste.
 
 =item -c
 
 Commit mode. This will aggregate all the actions on a single commit and send a
-single message. Must have specified -l in commitinfo.
+single message. Must have specified -l in the F<commitinfo> file.
 
 =item -f %{sVv}
 
@@ -811,7 +812,8 @@ do it.
 Group collection of CVS transactions in a single commit by the C<$USER>
 environment variable. This is most useful for when connecting to CVS via
 C<:pserver:>, since the usual method of collecting transactions -- by relying
-on the value returned by C<pgrp>, won't work.
+on the value returned by C<pgrp>, won't work. Use in both the F<commitinfo>
+and L<loginfo> files, or else it won't work at all!
 
 =item -h
 
@@ -835,14 +837,14 @@ In this mode, a notification message will be sent for every directory affected
 by a single commit to the repository. This could be a lot of messages if
 you've made a lot of changes, and is thus highly redundant.
 
-To use it, all you need to is add a call to activitymail to your loginfo file
-with (at minimum) the -f and -t arguments:
+To use it, all you need to is add a call to activitymail to your F<loginfo>
+file with (at minimum) the -f and -t arguments:
 
-  DEFAULT $CVSROOT/CVSROOT/activitymail -f %{sVv} -t admins@my_project.null
+  DEFAULT $CVSROOT/CVSROOT/activitymail -f %{sVv} -t admins@example.com
 
 To mimic the behavior of syncmail, add the -d argument to append diffs:
 
-  DEFAULT $CVSROOT/CVSROOT/activitymail -df %{sVv} -t admins@my_project.null
+  DEFAULT $CVSROOT/CVSROOT/activitymail -df %{sVv} -t admins@example.com
 
 =head2 Commit Mode
 
@@ -865,33 +867,49 @@ messages (up to the first period) be a breif summary, and the rest of the
 message can be a more detailed description of the changes.
 
 To use commit mode, you B<must> place a call to activitymail with the -l
-argument in your commitinfo file for every repository package you want to
+argument in your F<commitinfo> file for every repository package you want to
 manage in commit mode. Usually, that's everything, so you can just use the
 line (as long as you have no other lines -- see L<cvs> for more information):
 
   DEFAULT $CVSROOT/CVSROOT/activitymail -l
 
-Then, you'll need to add a second call to activitymail to your loginfo file
-for the same repository packages as for the commitinfo call to activitymail. A
-convenient line for this purpose (even if you have other log filters in place)
-is the ALL line:
+Then, you'll need to add a second call to activitymail to your F<loginfo> file
+for the same repository packages as in the F<commitinfo> file's call to
+activitymail. A convenient line for this purpose (even if you have other log
+filters in place) is the ALL line:
 
-  ALL $CVSROOT/CVSROOT/activitymail -cf %{sVv} -t admins@my_project.null
+  ALL $CVSROOT/CVSROOT/activitymail -cf %{sVv} -t admins@example.com
 
 The DEFAULT line will work equally well. Perhaps you want to have mail sent to
 different addresses for different repository pacakges. see L<cvs> for more
-information on the loginfo file syntax.
+information on the F<loginfo> file syntax.
 
-Finally, if you'd like to see diffs for the changes for any particular commit,
-add the -d argument. All of the changes to the repository will be recoreded in
-diff format and appended to the end of the message:
+If you'd like to see diffs for the changes for any particular commit, add the
+-d argument. All of the changes to the repository will be recoreded in diff
+format and appended to the end of the message:
 
-  ALL $CVSROOT/CVSROOT/activitymail -cdf %{sVv} -t admins@my_project.null
+  ALL $CVSROOT/CVSROOT/activitymail -cdf %{sVv} -t admins@example.com
 
 Better still, have the diffs added to the message as attachments by adding the
 -a option.
 
-  ALL $CVSROOT/CVSROOT/activitymail -cdaf %{sVv} -t admins@my_project.null
+  ALL $CVSROOT/CVSROOT/activitymail -cdaf %{sVv} -t admins@example.com
+
+Finally, If you commit to CVS via C<:pserver:>, you should use the -g option
+to get activitymail to properly group all of the CVS activity for a commit. By
+default, activitymail uses the value returned by C<pgrp> to determine what's
+part of a single commit action and what's another action. However, in
+C<:pserver:> mode, C<pgrp> always returns the same value. The solution is to
+use the C<$USER> environment variable to group the CVS activity. The
+assumption is that a single user will not be doing two separate commits at the
+same time, so this should work fine. Note that if you use the -g option, you
+B<must> use it in both the F<commitinfo> file:
+
+  DEFAULT $CVSROOT/CVSROOT/activitymail -lg
+
+And the F<loginfo> file:
+
+  ALL $CVSROOT/CVSROOT/activitymail -cdagf %{sVv} -t admins@example.com
 
 =head1 KNOWN ISSUES
 
