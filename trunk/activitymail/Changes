@@ -1,6 +1,6 @@
 Revision history for activitymail.
 
-1.15
+1.15   Wed Oct  8 18:00:32 2003
        - Branch tag information is now also included for commit messages sent
          without diffs. Thanks to Bob Bradley for the fix.
 
