@@ -157,7 +157,12 @@ sub parse_file_list {
                 # If we have a match, either exit or send the notice.
                 DEBUG && dbpnt("Action: $c->[3]");
                 exit if $c->[0];
-                mail(mk_subject($c->[3], $mod), slurp_file());
+                my $sub = mk_subject($c->[3], $mod);
+                # Set up the multipart/mixed boundary for HTML email.
+                boundary($sub) if $opt_a;
+                mail($sub, $opt_H
+                     ? \"<pre>${\slurp_file()}</pre>\n"
+                     : \slurp_file() );
             }
         }
     }
@@ -183,6 +188,12 @@ sub syncmail {
     # Get the subject and the message body.
     my $subject = mk_subject($opt_f, $mod);
     (my $body = slurp_file()) =~ s/\s+/\n/s;
+    if ($opt_H) {
+        # Set up the multipart/mixed boundary and turn the body of the message
+        # into HTML.
+        boundary($subject) if $opt_a;
+        $body = "<pre>$body</pre>\n" if $opt_H;
+    }
     if ($opt_d) {
         # We want diffs. So we have to fork.
         unless (fork) {
@@ -191,13 +202,13 @@ sub syncmail {
             # Now get the diffs and send the message.
             $body .= attach($subject) if $opt_a;
             $body .= "\n" . get_diffs($revs);
-            mail($subject, $body);
+            mail($subject, \$body);
         }
         # Exit the parent process.
         exit;
     } else {
         # No diffs. Just send the mail. Delete temp files, just in case.
-        mail($subject, $body);
+        mail($subject, \$body);
     }
 }
 
@@ -275,7 +286,7 @@ sub slurp_file {
 sub mail {
     my ($subject, $body) = @_;
 
-    # over max size?
+    # Over max size?
     if ($opt_M and (length($body) / 1024) > $opt_M) {
         print "*** Not sending mail to $opt_t!\n";
         print "*** The message is ", int(length($body) / 1024),
@@ -714,11 +725,7 @@ sub save_data {
 ##############################################################################
 
 sub attach {
-    # Create the attachment boundary string. MD5 would be better, but we can't
-    # count on its presence, and it's not really crucial, anyway.
-    my $salt = join '', ('.', '/', 0..9, 'A'..'Z', 'a'..'z')[rand 64, rand 64];
-    $opt_a = crypt($_[0], $salt);
-
+    boundary(@_);
     # Get the date (UTC).
     my @gm = gmtime;
     $gm[5] += 1900;
@@ -737,6 +744,15 @@ Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=ISO-8859-1
 
 };
+}
+
+##############################################################################
+# Ths function creates the attachment boundary string. MD5 would be better,
+# but we can't count on its presence, and it's not really crucial, anyway.
+##############################################################################
+sub boundary {
+    my $salt = join '', ('.', '/', 0..9, 'A'..'Z', 'a'..'z')[rand 64, rand 64];
+    $opt_a = crypt($_[0], $salt);
 }
 
 ##############################################################################
