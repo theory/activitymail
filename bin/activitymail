@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: activitymail,v 1.9 2002/08/01 19:19:53 david Exp $
+# $Id: activitymail,v 1.10 2002/08/01 21:23:28 david Exp $
 
 use strict;
 use Getopt::Std;
@@ -631,8 +631,8 @@ Supported options:
   -m <message>   Optional message to put at the beginning of the email subject.
   -p             Add the name of the CVS module to the message subject.
   -s <sendmail>  Location of sendmail.
-  -u <user>      User email address from which email should be sent.
-  -g             Use -u to group collection of commits into one message.
+  -u <email>     User email address from which email should be sent.
+  -g             Use $USER environment variable to group collection of commits.
   -h             Print this usage statement.
   -D             Debug mode.
 
