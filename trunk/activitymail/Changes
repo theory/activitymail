@@ -1,6 +1,7 @@
 Revision history for activitymail.
 
-1.21
+1.21   2005-02-11T02:13:00
+       - Updated contact and bug reporting information.
 
 1.20   2005-02-11T02:02:40
        - Fix for missing module name due to the way Eclipse 3.0 defines

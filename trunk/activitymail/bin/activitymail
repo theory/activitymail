@@ -1328,12 +1328,13 @@ large commit.
 
 =head1 BUGS
 
-Report all bugs via the CPAN Request Tracker at
+Please send bug reports to <bug-activitymail@rt.cpan.org> or report them via
+the CPAN Request Tracker at
 L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=activitymail>.
 
 =head1 AUTHOR
 
-David Wheeler <david@wheeler.net>
+David Wheeler <david@justatheory.com>
 
 =head1 SEE ALSO
 

@@ -1,8 +1,8 @@
 ---
 name: activitymail
-version: 1.20
+version: 1.21
 author:
-  - David Wheeler <david@wheeler.net>
+  - David Wheeler <david@justatheory.com>
 abstract: CVS activity notification
 license: perl
 requires:
