@@ -198,11 +198,11 @@ sub parse_file_list {
 
   REV: while (@revs) {
         my $spec = shift @revs;
-        my ($file, $old, $new) = $spec =~ /$regex/;
+        my ($file, $old, $new) = $spec =~ $regex;
         # Handle file names with spaces.
         until ($old or $new or not @revs) {
             $spec = shift @revs;
-            (my ($f), $old, $new) = $spec =~ /$regex/;
+            (my ($f), $old, $new) = $spec =~ $regex;
             $file .= " $f";
         }
 
