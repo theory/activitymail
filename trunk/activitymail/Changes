@@ -1,6 +1,12 @@
 Revision history for activitymail.
 
 1.19
+       - Added -q and -Q to suppress status messages. Suggested by Gary Meyer.
+       - Added -E and -I to specify regular expressions to check before
+         sending activity notifications for files. The regular expressions
+         are compared to the names of the files being committed. Multiple
+         regular expressions can be specified in a space-delimited list.
+         Heavily modified patch from Gary Meyer.
 
 1.18   2004-03-03T01:41:16
        - Slightly safer handling of directory names with spaces.

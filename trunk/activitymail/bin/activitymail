@@ -37,8 +37,9 @@ BEGIN {
     use vars qw($opt_f $opt_r $opt_l $opt_m $opt_t $opt_n $opt_i $opt_p $opt_c
                 $opt_s $opt_h $opt_d $opt_a $opt_D $opt_o $opt_e $opt_u $opt_g
                 $opt_w $opt_H $opt_B $opt_j $opt_M $opt_S $opt_v $opt_V $opt_N
+		$opt_I $opt_E $opt_q $opt_Q
                );
-    getopts('f:lr:m:t:nipcs:dhaDo:e:u:gw:HB:j:M:SvVN:');
+    getopts('f:lr:m:t:nipcs:dhaDo:e:u:gw:HB:j:M:SvVN:I:E:qQ');
 }
 
 ##############################################################################
@@ -61,6 +62,7 @@ my $pgrp = $opt_g ? $ENV{USER} : getpgrp;
 $opt_e ||= 'cvs';
 $opt_j ||= 'diff';
 $opt_N ||= '/dev/null';
+$opt_q ||= $opt_Q;
 
 # This hash will be used in several of the functions below.
 my %map = ( mod => 'Modified Files',
@@ -87,20 +89,23 @@ my $ctype = $opt_H ? 'text/html' : 'text/plain';
 
 # Get the current working directory, the name of the repository module, and a
 # list of the files being revised in the current directory.
-my ($mod, $dir, $revs) = parse_file_list($opt_f);
+my ($dir, $mod, $revs) = parse_file_list($opt_f);
 
 # Unless we're in commit mode, just send the current message.
-syncmail($mod, $revs) unless $opt_c;
+syncmail($mod, $revs) if $mod && not $opt_c;
 
 # So if we got here, parse the contents of STDIN. This gives us the message
 # and tags for only the last directory to be committed, but that should be
 # fine.
-my ($msg, $files, $tags) = parse_stdin($dir, $revs);
+my ($msg, $files, $tags) = $mod ? parse_stdin($dir, $revs) : ();
 
 # If it's the last directory, send the message. Otherwise, save the data to
 # disk for later in the commit.
-is_last_dir($dir) ? notify($mod, $msg, $revs, $files, $tags)
-  : save_data($revs, $files);
+if (is_last_dir($dir)) {
+    notify($mod, $msg, $revs, $files, $tags);
+} else {
+    save_data($revs, $files) if $mod;
+}
 
 # That's it!
 
@@ -181,9 +186,14 @@ sub parse_file_list {
 
     # If we get here, it's not a special status message, but a list of files
     # and revisions. So split them up into a hash.
-    my %revmap;
+    my (%revmap, $got_files);
     my $regex = qr/^(.*?)(?:,([\d.]+.\d|NONE))?(?:,([\d.]+.\d|NONE))?$/;
-    while (@revs) {
+
+    # Put together the regular expressions for including or excluding files.
+    $opt_I = [map { qr/$_/ } split ' ', $opt_I] if $opt_I;
+    $opt_E = [map { qr/$_/ } split ' ', $opt_E] if $opt_E;
+
+  REV: while (@revs) {
         my $spec = shift @revs;
         my ($file, $old, $new) = $spec =~ /$regex/;
         # Handle file names with spaces.
@@ -192,11 +202,35 @@ sub parse_file_list {
             (my ($f), $old, $new) = $spec =~ /$regex/;
             $file .= " $f";
         }
-        DEBUG && dbpnt("$file => $old => $new\n");
-        $revmap{$file} = [$old, $new, catfile(@subdirs, $file)];
+
+        $revmap{$file} = undef;
+        my $path = catfile(@subdirs, $file);
+        DEBUG && dbpnt("$file => $old => $new ($path)\n");
+
+        # Make sure the file is meant to be included.
+        if ($opt_I) {
+            for my $rx (@$opt_I) {
+                DEBUG && dbpnt("Including $path") if $path =~ /$rx/;
+                next REV unless $path =~ $rx;
+            }
+        }
+
+        # Skip the file if it's meant to be excluded.
+        if ($opt_E) {
+            for my $rx (@$opt_E) {
+                DEBUG && dbpnt("Excluding $path") unless $path =~ /$rx/;
+                next REV if $path =~ /$rx/;
+            }
+        }
+
+        # If we get here, keep it!
+        $got_files = 1;
+        $revmap{$file} = [$old, $new, $path];
     }
 
-    return ($mod, $dir, \%revmap);
+    # If there are no files, simply return the directory name.
+    return ($dir) unless $got_files;
+    return ($dir, $mod, \%revmap);
 }
 
 ##############################################################################
@@ -310,13 +344,14 @@ sub mail {
 
     # Over max size?
     if ($opt_M and (length($body) / 1024) > $opt_M) {
+        exit if $opt_Q;
         print "*** Not sending mail to $opt_t!\n";
         print "*** The message is ", int(length($body) / 1024),
           "k long and maximum message size is ${opt_M}k.\n";
         exit;
     }
 
-    print "Sending mail to $opt_t...";
+    print "Sending mail to $opt_t..." unless $opt_q;
 
     $opt_s ||= find_sendmail() or mydie("Cannot find sendmail. Use -s.\n");
     open(SENDMAIL, "|$opt_s -oi -t")
@@ -336,7 +371,7 @@ sub mail {
     print SENDMAIL "\n$$body";
     print SENDMAIL "--$opt_a--\n" if $opt_a;
     close SENDMAIL;
-    print "Done\n";
+    print "Done\n" unless $opt_q;
     # Delete any temp files.
     exit;
 }
@@ -363,7 +398,7 @@ sub get_diffs {
         # Skip binary files.
         next if -B $file;
         # Skip any from the list passed by the user.
-        if ($opt_B && $file =~ /\.([^.]+)$/) {
+        if ($opt_B && $file =~ /([^.]*)$/) {
             next if $ignore{lc $1};
         }
         # Okay, now process this sucker.
@@ -437,7 +472,14 @@ sub parse_stdin {
             next unless $_;
             my @files = split;
             while (my $f = shift @files) {
-                $f .= " " . shift @files until $revs->{$f} or not @files;
+                $f .= " " . shift @files
+                  until exists $revs->{$f} or not @files;
+                # Skip the file if there's no revision information. This
+                # is generally because -I or -E excluded it.
+                unless ($revs->{$f}) {
+                    delete $revs->{$f};
+                    next;
+                }
                 push @{ $files->{$flag} }, catdir($ENV{CVSROOT}, $dir, $f) .
                   ",$revs->{$f}[0],$revs->{$f}[1]";
                 DEBUG && dbpnt("$f => $files->{$flag}[-1]\n");
@@ -481,13 +523,13 @@ sub is_last_dir {
 
 sub notify {
     my ($mod, $msg, $revs, $files, $tags) = @_;
-    print "Collecting file lists...";
+    print "Collecting file lists..." unless $opt_q;
     if ($opt_d) {
         # We want diffs. That means we have to fork so that CVS will let go
         # of the files.
         unless (fork) {
             # It's the child process. Grab the files.
-            $files = get_files($files);
+            $files = get_files($files) or exit;
             # Grab the diffs for the latest files.
             $files->{rev} .= get_diffs($revs);
             my $subject = mk_subject($msg, $mod, $files);
@@ -496,7 +538,7 @@ sub notify {
         }
     } else {
         # No need for diffs. Just send it as is.
-        $files = get_files($files);
+        $files = get_files($files) or exit;
         my $subject = mk_subject($msg, $mod, $files);
         mail($subject, build_msg($msg, $files, $revs, $subject, $tags));
         exit;
@@ -534,18 +576,23 @@ sub get_files {
         # Delete the file.
         unlink($file);
         # Add the files that we had already.
-        push @{ $fetched->{$flag} }, @{ $files->{$flag} };
+        push @{ $fetched->{$flag} }, @{ $files->{$flag} }
+          if $files->{$flag};
     }
+
+    # Just return if there are no files listed (because they were excluded
+    # by -I or -I).
+    return unless %$fetched;
 
     # Return the files unless we need diffs.
     unless ($opt_d) {
-        print "Done.\n";
+        print "Done.\n" unless $opt_q;
         return $fetched;
     }
 
     # Okay, now get the diffs. Get the name of the lock files and wait until
     # they're all gone.
-    print "Collecting diffs...";
+    print "Collecting diffs..." unless $opt_q;
     my $locks = tmp_base_name('lock');
 
     DEBUG && dbpnt("Waiting for all '$locks' files...\n");
@@ -573,7 +620,7 @@ sub get_files {
         unlink($file);
     }
     closedir(TMP);
-    print "Done\n";
+    print "Done\n" unless $opt_q;
     return $fetched;
 }
 
@@ -879,6 +926,10 @@ Supported options:
   -w <url>       Include links to specified cvsweb url in generated email.
   -B <list>      Space-delimited list of (binary) file name extensions that should
                  not be diffed.
+  -I <regexen>   Space-delimited list of regular expressions to include files.
+  -E <regexen>   Space-delimited list of regular expressions to exclude files.
+  -q             Quiet mode.
+  -Q             Very quiety mode.
   -v             Print the version number and exit.
   -h             Print this usage statement and exit.
   -D             Debug mode.
@@ -1112,6 +1163,36 @@ activitymail is diffing binary files, use this option to specify a
 space-delimited list of file name extensions on the binary files that you want
 activitymail to skip.
 
+=item -I <regexen>
+
+A space delimited list of regular expressions identifying the files to include
+in the processing of the commit message. Use C<\s> in place of literal
+spaces. The file name checked by the regular expression will be relative to
+the CVS module root. If both the C<-I> and C<-E> options are specified, then
+files that match an expression in both will be excluded, and files that match
+an expression in neither will also be excluded.
+
+=item -E <regexen>
+
+A space delimited list of regular expressions identifying the files to exclude
+from the processing of the commit message. Use C<\s> in place of literal
+spaces. The file name checked by the regular expression will be relative to
+the CVS module root. If both the C<-I> and C<-E> options are specified, then
+files that match an expression in both will be excluded, and files that match
+an expression in neither will also be excluded.
+
+=item -q
+
+Quiet mode. Status messages will be suppressed. Debug messages will still be
+output if C<-D> is enabled.
+
+=item -Q
+
+Very quiet mode. In addition to the status messages suppressed by C<-q>, C<-Q>
+will also suppress the message output when an email won't be set because of a
+size limitation set by C<-m>. Debug messages will still be output if C<-D> is
+enabled.
+
 =item -h
 
 Print usage statement. It's a simplified version of this section of the docs,
@@ -1240,13 +1321,6 @@ them all up into memory, but passing them directly to sendmail instead. This
 should dramatically lower the amount of memory activitymail takes up during a
 large commit.
 
-=item *
-
-Add a specification to allow messages to be sent only for commits in certain
-directories. I understand that L<commit_prep|commit_prep> and
-L<log_accum|log_accum> could do this, though I'm not sure how. At any rate,
-it'd certainly be useful for certain notification tasks.
-
 =back
 
 =head1 BUGS
@@ -1285,7 +1359,7 @@ L<http://ccvs.cvshome.org/source/browse/ccvs/contrib/commit_prep.in>.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2002-2003, David Wheeler. All Rights Reserved.
+Copyright (c) 2002-2004, David Wheeler. All Rights Reserved.
 
 This program is free software; you can redistribute it and/or modify it under
 the same terms as Perl.
