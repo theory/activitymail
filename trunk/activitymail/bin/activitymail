@@ -11,7 +11,7 @@ use Getopt::Std;
 use File::Basename qw(basename dirname);
 use vars qw($VERSION);
 
-$VERSION = '1.15';
+$VERSION = '1.16';
 $|++;
 
 ##############################################################################
@@ -636,8 +636,10 @@ sub build_text_msg {
             $dir =~ s|^$ENV{CVSROOT}/?||;
             my $url = $opt_w ? "$opt_w$dir/$nm" : '';
             if ($type eq 'mod') {
-                $url .= ".diff?r1=$old&r2=$new";
-                $nm .= " (r$old -> r$new)" if $opt_V;
+                if ($opt_V) {
+                    $url .= ".diff?r1=$old&r2=$new";
+                    $nm .= " (r$old -> r$new)";
+                }
             } elsif ($type eq 'add') {
                 $url .= "?rev=$new&content-type=text/x-cvsweb-markup";
                 $nm .= " (r$new)" if $opt_V;
