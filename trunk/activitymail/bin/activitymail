@@ -161,6 +161,7 @@ sub parse_file_list {
     }
 
     my ($mod, @subdirs) = splitdir $dir;
+    $mod = shift @subdirs unless defined $mod && $mod ne '';
     DEBUG && dbpnt("Directory: '$dir'; Subdir: '" . catdir(@subdirs) .
                    "'; Module: $mod\n");
 
