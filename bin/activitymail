@@ -1,13 +1,13 @@
 #!/usr/bin/perl -w
 
-# $Id: activitymail,v 1.3 2002/07/03 17:42:27 david Exp $
+# $Id: activitymail,v 1.4 2002/07/30 01:00:34 david Exp $
 
 use strict;
 use Getopt::Std;
 use File::Basename qw(basename dirname);
 use vars qw($VERSION);
 
-$VERSION = '1.02';
+$VERSION = '1.03';
 
 ##############################################################################
 # Set up catdir and tmpdir. Hopefully we can just use File::Spec::Functions
@@ -29,8 +29,8 @@ BEGIN {
 
     # Get the command-line arugments.
     use vars qw($opt_f $opt_r $opt_l $opt_m $opt_t $opt_n $opt_i $opt_p $opt_c
-                $opt_s $opt_h $opt_d $opt_a $opt_D $opt_o);
-    getopts('f:lr:m:t:nipcs:dhaDo:');
+                $opt_s $opt_h $opt_d $opt_a $opt_D $opt_o $opt_e);
+    getopts('f:lr:m:t:nipcs:dhaDo:b:');
 }
 
 ##############################################################################
@@ -41,13 +41,16 @@ BEGIN {
 use constant DEBUG => $opt_D ? 1 : 0;
 use constant SMLOCS => qw(/usr/lib/sendmail /usr/sbin/sendmail
                           /usr/ucblib/sendmail);
-
+u
 # When we do forking to get diff files, we want to ignore the children.
 $SIG{CHLD} = 'IGNORE';
 
 # These will be used by tmp_file_name().
 my $tmpdir = tmpdir();
 my $pgrp = getpgrp;
+
+# Determin location of CVS binary.
+$opt_e ||= 'cvs';
 
 # These hashes will be used in several of the functions below.
 my %map = ( mod => 'Modified Files',
@@ -275,7 +278,7 @@ sub get_diffs {
                 $diffs .= slurp_file($file);
             } else {
                 # Otherwise, read the file from a non-changing update.
-                $diffs .= `cvs -fn update -r $new -p $file`;
+                $diffs .= `$opt_e -fn update -r $new -p $file`;
             }
         } elsif ($new eq 'NONE') {
             # The file has been deleted. Simply note that fact.
@@ -283,7 +286,7 @@ sub get_diffs {
         } else {
             # We actually have to get a diff!
             $diffs .=
-              `/usr/bin/cvs -f diff -kk $opt_o -r $old -r $new '$file'`;
+              `$opt_e -f diff -kk $opt_o -r $old -r $new '$file'`;
         }
     }
     return $diffs;
@@ -617,6 +620,7 @@ Supported options:
   -c             Commit mode. Required unless -l.
   -f %{sVv}      The file spec argument from CVS. Required unless -l
   -t <email>     The notification destination email address. Required unless -l.
+  -e <cvs>       Location of CVS executable. Defaults to "cvs" (i.e., in path).
   -d             Include the diffs for all the files processed.
   -o <opts>      Otions to pass to diff command.
   -a             Attach the diffs to the message.
@@ -737,6 +741,11 @@ unless -l.
 =item -t <email>
 
 The email address or addresses to send notifications to. Required unless -l.
+
+=item -e
+
+Location of the CVS executable, e.g., F</usr/bin/cvs>. Defaults to F<cvs>, thus
+assuming that the cvs executable is in the path.
 
 =item -d
 
