@@ -1229,6 +1229,19 @@ to problems. So until CVS fixes this bug, any files with spaces in them will
 actually have their diff header file names with underscores substituted for
 spaces.
 
+=head1 TO DO
+
+=over 4
+
+=item *
+
+Change the way diffs are aggregated for messages so that we're not loading
+them all up into memory, but passing them directly to sendmail instead. This
+should dramatically lower the amount of memory activitymail takes up during a
+large commit.
+
+=back
+
 =head1 BUGS
 
 Report all bugs via the CPAN Request Tracker at
