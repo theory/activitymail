@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: activitymail,v 1.5 2002/07/30 01:11:34 david Exp $
+# $Id: activitymail,v 1.6 2002/07/30 01:12:58 david Exp $
 
 use strict;
 use Getopt::Std;
@@ -41,7 +41,7 @@ BEGIN {
 use constant DEBUG => $opt_D ? 1 : 0;
 use constant SMLOCS => qw(/usr/lib/sendmail /usr/sbin/sendmail
                           /usr/ucblib/sendmail);
-u
+
 # When we do forking to get diff files, we want to ignore the children.
 $SIG{CHLD} = 'IGNORE';
 
