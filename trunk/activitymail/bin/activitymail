@@ -916,7 +916,7 @@ Supported options:
   -d             Include the diffs for all the files processed.
   -j             Location of diff executable. Defaults to "diff" (i.e., in path).
   -N <file>      Location of the null file. Defaults to "/dev/null".
-  -o <opts>      Otions to pass to diff command.
+  -o <opts>      Options to pass to diff command.
   -a             Attach the diffs to the message.
   -r <email>     Reply-to address.
   -n             Ignore New directory commits.
