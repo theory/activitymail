@@ -89,7 +89,12 @@ log_dir($ARGV[0]) if $opt_l;
 $opt_o ||= '-u';
 
 # Set the content type.
-my $ctype = $opt_H ? 'text/html' : 'text/plain';
+my $ctype = 'text/plain';
+if ($opt_H) {
+    require HTML::Entities;
+    HTML::Entities->import('encode_entities');
+    $ctype = 'text/html';
+}
 
 # Get the current working directory, the name of the repository module, and a
 # list of the files being revised in the current directory.
@@ -252,8 +257,7 @@ sub syncmail {
         # Set up the multipart/mixed boundary and turn the body of the message
         # into HTML.
         boundary($subject) if $opt_a;
-        $body = "${\xhtml_header()}<pre>$body</pre>${\xhtml_footer()}\n"
-          if $opt_H;
+        $body = xhtml_header() . "<pre>" . encode_entities($body) . "</pre>";
     }
     if ($opt_d) {
         # We want diffs. So we have to fork.
@@ -262,13 +266,19 @@ sub syncmail {
             sleep 2;
             # Now get the diffs and send the message.
             $body .= attach($subject) if $opt_a;
-            $body .= "\n" . get_diffs($revs);
+            if ($opt_H) {
+                $body .= "\n<pre>" . encode_entities(get_diffs($revs))
+                  . '</pre>' . xhtml_footer() . "\n";
+            } else {
+                $body .= "\n" . get_diffs($revs);
+            }
             mail($subject, \$body);
         }
         # Exit the parent process.
         exit;
     } else {
         # No diffs. Just send the mail. Delete temp files, just in case.
+        $body .= xhtml_footer() . "\n" if $opt_H;
         mail($subject, \$body);
     }
 }
@@ -651,7 +661,16 @@ sub build_msg {
         $$msg .= $opt_a ? attach($_[3]) :
           "\n$map{rev}\n" . '-' x length($map{rev}). "\n";
         # Attach those diffs!
-        $$msg .= $_[1]->{rev};
+        if ($opt_H) {
+            if ($opt_a) {
+                $$msg .= $_[1]->{rev};
+            } else {
+                $$msg .= '<pre>' . encode_entities($_[1]->{rev}) . '</pre>';
+            }
+            $$msg .= xhtml_footer();
+        } else {
+            $$msg .= $_[1]->{rev};
+        }
     }
     return $msg;
 }
@@ -714,7 +733,8 @@ sub build_text_msg {
 
 sub build_html_msg {
     my ($msg, $files, $revs, $subject) = @_;
-    $msg = xhtml_header() . "<h3>Log Message</h3>\n\n<pre>$msg</pre>\n\n";
+    $msg = xhtml_header() . "<h3>Log Message</h3>\n\n<pre>"
+      . encode_entities($msg) . "</pre>\n\n";
 
     # Add any tags.
     $msg .= "<h3>Tags:</h3>\n<ul>\n  <li>" .
@@ -730,7 +750,7 @@ sub build_html_msg {
         # Grab the first directory name.
         my $lastdir = dirname($files->{$type}[0]);
         $lastdir =~ s|^$ENV{CVSROOT}/?||;
-        $msg .= "<h4>$lastdir</h4>\n<ul>\n";
+        $msg .= "<h4>" . encode_entities($lastdir) . "</h4>\n<ul>\n";
 
         for (@{ $files->{$type} }) {
             my ($new, $old, $f, @extras) = reverse split ',';
@@ -742,7 +762,8 @@ sub build_html_msg {
             if ($curdir ne $lastdir) {
                 # Different directory. Record that.
                 $lastdir = $curdir;
-                $msg .= "</ul>\n<h4>$lastdir</h4>\n<ul>\n";
+                $msg .= "</ul>\n<h4>" . encode_entities($lastdir)
+                  . "</h4>\n<ul>\n";
             }
             # Record the name of the file altered.
             my $nm = basename($f);
@@ -761,7 +782,6 @@ sub build_html_msg {
         }
         $msg .= "</ul>\n";
     }
-    $msg .= xhtml_footer();
     return \$msg;
 }
 

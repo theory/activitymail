@@ -10,5 +10,6 @@ requires:
   Getopt::Std: 0
 recommends:
   File::Spec: 0
+  HTML::Entities: 0
 provides: {}
-generated_by: Module::Build version 0.26
+generated_by: Module::Build version 0.2701

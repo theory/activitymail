@@ -2,6 +2,8 @@ Revision history for activitymail.
 
 1.22
        - Fixed typo spotted by Matthew Doar.
+       - Fixed HTML mode so that HTML is escaped when it is inserted into the
+         email (as opposed to when it is attached). reported by James B.
 
 1.21   2005-02-11T02:13:00
        - Updated contact and bug reporting information.
