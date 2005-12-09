@@ -1,9 +1,22 @@
 Revision history for activitymail.
 
-1.22
+1.23
+       - Various spelling corrections from Gavin Shelley.
+       - Added note about incompatibility of diff on SunOS 5.9. Reported by
+         Gavin Shelley.
+       - Fixed CVS 1.12 command-line parsing to support the "NONE" string for
+         added or deleted version numbers. Based on a patch from Remi Richard.
+
+1.22   2005-10-04T16:57:08
        - Fixed typo spotted by Matthew Doar.
        - Fixed HTML mode so that HTML is escaped when it is inserted into the
          email (as opposed to when it is attached). reported by James B.
+       - Added -P to support the new CVS 1.12 %p argument. Based on a patch
+         from Remi Ricard.
+       - Added the -U argument to replace spaces with underscores in file
+         names before handing them off to 'diff'. Such was always done in
+         earlier versions, but newer versions of CVS don't need it, so -U has
+         been added for the benefit of users of older versions of CVS.
 
 1.21   2005-02-11T02:13:00
        - Updated contact and bug reporting information.

@@ -1,4 +1,4 @@
-activitymail version 1.20
+activitymail version 1.22
 =========================
 
 This program may be used for sending email messages for CVS repository
@@ -50,7 +50,7 @@ This program works best but does not require these other modules and libraries.
 
 COPYRIGHT AND LICENCE
 
-Copyright (c) 2002-2004, David Wheeler. All Rights Reserved.
+Copyright (c) 2002-2005, David Wheeler. All Rights Reserved.
 
 This program is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.
