@@ -1,9 +1,0 @@
-^_build
-^Build$
-^blib
-~$
-\.bak$
-^MANIFEST\.SKIP$
-^activitymail
-^www
-CVS
