@@ -1,6 +1,14 @@
 Revision history for activitymail.
 
 1.24
+       - Removed ".diff" from diff URLs, since it doesn't seem to be required
+         by CVSWeb and broke ViewVC. Reported by George Pavlov.
+       - Added calls to uri_escape() to properly escape URLs. Reported by
+         George Pavlov.
+       - Added single quotes around "%{sVv}" in all the examples of the
+         comamnd-line, as it seems that some shells have a hard time
+         recognizing "%{sVv}" as an argument rather than something else.
+         reported by Dave Thorn.
 
 1.23   2005-12-09T19:41:23
        - Various spelling corrections from Gavin Shelley.

@@ -45,6 +45,10 @@ BEGIN {
 ##############################################################################
 # Set up the variables and constants we'll need later.
 ##############################################################################
+if ($opt_w) {
+    require URI::Escape;
+    URI::Escape->import('uri_escape');
+}
 
 # Set constants.
 use constant DEBUG => $opt_D ? 1 : 0;
@@ -725,7 +729,7 @@ sub build_text_msg {
             my $url = $opt_w ? "$opt_w$dir/$nm" : '';
             if ($type eq 'mod') {
                 if ($opt_V) {
-                    $url .= ".diff?r1=$old&r2=$new";
+                    $url .= "?r1=$old&r2=$new";
                     $nm .= " (r$old -> r$new)";
                 }
             } elsif ($type eq 'add') {
@@ -733,7 +737,7 @@ sub build_text_msg {
                 $nm .= " (r$new)" if $opt_V;
             }
             $msg .= "$nm\n";
-            $msg .= "        ($url)\n" if $opt_w;
+            $msg .= '        (' . uri_escape($url) . ")\n" if $opt_w;
         }
     }
     return \$msg;
@@ -780,13 +784,15 @@ sub build_html_msg {
             $msg .= "  <li>";
             my $url = $opt_w ? "$opt_w$dir/$nm" : '';
             if ($type eq 'mod') {
-                $url .= ".diff?r1=$old&r2=$new";
+                $url .= "?r1=$old&r2=$new";
                 $nm .= " (r$old -> r$new)" if $opt_V;
             } elsif ($type eq 'add') {
                 $url .= "?rev=$new&content-type=text/x-cvsweb-markup";
                 $nm .= " (r$new)" if $opt_V;
             }
-            $msg .= ($opt_w ? qq{<a href="$url">$nm</a>} : $nm) . "</li>\n";
+            $msg .= (
+                $opt_w ? '<a href="' . uri_escape($url) . qq{">$nm</a>} : $nm
+            ) . "</li>\n";
         }
         $msg .= "</ul>\n";
     }
@@ -932,13 +938,13 @@ sub usage {
 
 Usage: $exe -l
 
-       $exe -P %p -f %{sVv} -t admins\@example.com [options]
+       $exe -P %p -f '%{sVv}' -t admins\@example.com [options]
 
 Supported options:
 
   -l             Directory logging mode. Required unless -c.
   -c             Commit mode. Required unless -l.
-  -f %{sVv}      File spec argument from CVS. Required unless -l
+  -f '%{sVv}'    File spec argument from CVS. Required unless -l
   -P %p          Commit directory. Needed if -f and with CVS 1.12 or later.
   -t <email>     Notification destination email address. Required unless -l.
   -e <cvs>       Location of CVS. Defaults to "cvs" (i.e., in path).
@@ -959,7 +965,7 @@ Supported options:
   -M <size>      Maximum size of emailed messages in kilobytes.
   -V             Include revision numbers in the email message.
   -H             Use HTML for generated emails.
-  -w <url>       Include links to specified CVSWeb url in email.
+  -w <url>       Include links to specified ViewVC/CVSWeb url in email.
   -B <list>      Space-delimited list of file name suffixes not to diff.
   -I <regexen>   Space-delimited list of regexen to include files.
   -E <regexen>   Space-delimited list of regexen to exclude files.
@@ -987,7 +993,7 @@ activitymail - CVS activity notification
   DEFAULT $CVSROOT/CVSROOT/activitymail -l
 
   # In loginfo:
-  DEFAULT $CVSROOT/CVSROOT/activitymail -dacf %{sVv} -t admins@example.com
+  DEFAULT $CVSROOT/CVSROOT/activitymail -dacf '%{sVv}' -t admins@example.com
 
 =head1 DESCRIPTION
 
@@ -1050,7 +1056,7 @@ for CVS 1.12 and later. Use the C<-c> option if you're running commit mode
 (i.e., you've added a call with C<-l> to the F<commitinfo> file -- see
 L<"Commit Mode"> below). Here's an example:
 
-  DEFAULT $CVSROOT/CVSROOT/activitymail -cP %p -f %{sVv} -t admins@example.com
+  DEFAULT $CVSROOT/CVSROOT/activitymail -cP %p -f '%{sVv}' -t admins@example.com
 
 =item 6.
 
@@ -1073,16 +1079,17 @@ it's just a waste.
 Commit mode. This mode will aggregate all the actions on a single commit and
 send a single message. Must have specified C<-l> in the F<commitinfo> file.
 
-=item -f %{sVv}
+=item -f '%{sVv}'
 
-The file spec argument from CVS. It must be called as C<-f %{sVv}>. Required
-unless C<-l>. CVS 1.12 and later users should also use C<-P %p>, as C<-f
-%1{SVv}> will generate deprecation warnings.
+The file spec argument from CVS. It must be called as C<-f '%{sVv}'>. Single
+quotes are recommended, as some shells otherwise seem to have a hard time.
+Required unless C<-l>. CVS 1.12 and later users should also use C<-P %p>, as
+C<-f %1{SVv}> will generate deprecation warnings.
 
 =item -P
 
 The directory argument from CVS. This option is only useful for CVS 1.12 or
-later, where the command line format should be C<-P %p -f %{sVv}>.
+later, where the command line format should be C<-P %p -f '%{sVv}'>.
 
 =item -t <email>
 
@@ -1195,8 +1202,8 @@ some basic HTML formatting tags used for the display of the commit message.
 
 =item -w <url>
 
-Include links to specified CVSWeb URL for the diffs for each file. Most useful
-with the C<-H> option.
+Include links to specified ViewVC or CVSWeb URL for the diffs for each file.
+Most useful with the C<-H> option.
 
 =item -B <list>
 
@@ -1269,11 +1276,11 @@ To use it, all you need to cimply add a call to C<activitymail> to your
 F<loginfo> file with (at minimum) the C<-f>, C<-P> (for CVS 1.12 and later),
 and C<-t> options:
 
-  DEFAULT $CVSROOT/CVSROOT/activitymail -P %p -f %{sVv} -t admins@example.com
+  DEFAULT $CVSROOT/CVSROOT/activitymail -P %p -f '%{sVv}' -t admins@example.com
 
 To mimic the behavior of syncmail, add the -d option to append diffs:
 
-  DEFAULT $CVSROOT/CVSROOT/activitymail -dP %p -f %{sVv} -t admins@example.com
+  DEFAULT $CVSROOT/CVSROOT/activitymail -dP %p -f '%{sVv}' -t admins@example.com
 
 =head2 Commit Mode
 
@@ -1307,7 +1314,7 @@ for the same repository packages as in the F<commitinfo> file's call to
 C<activitymail>. A convenient line for this purpose (even if you have other log
 filters in place) is the ALL line:
 
-  ALL $CVSROOT/CVSROOT/activitymail -cf %{sVv} -t admins@example.com
+  ALL $CVSROOT/CVSROOT/activitymail -cf '%{sVv}' -t admins@example.com
 
 The DEFAULT line will work equally well. Perhaps you want to have mail sent to
 different addresses for different repository packages. see L<cvs> for more
@@ -1317,12 +1324,12 @@ If you'd like to see diffs for the changes for any particular commit, add the
 C<-d> option. All of the changes to the repository will be recorded in diff
 format and appended to the end of the message:
 
-  ALL $CVSROOT/CVSROOT/activitymail -cdf %{sVv} -t admins@example.com
+  ALL $CVSROOT/CVSROOT/activitymail -cdf '%{sVv}' -t admins@example.com
 
 Better still, have the diffs added to the message as attachments by adding the
 -a option.
 
-  ALL $CVSROOT/CVSROOT/activitymail -cdaf %{sVv} -t admins@example.com
+  ALL $CVSROOT/CVSROOT/activitymail -cdaf '%{sVv}' -t admins@example.com
 
 Finally, If you commit to CVS via C<:pserver:>, you should use the -g option
 to get C<activitymail> to properly group all of the CVS activity for a commit. By
@@ -1338,7 +1345,7 @@ B<must> use it in both the F<commitinfo> file:
 
 And the F<loginfo> file:
 
-  ALL $CVSROOT/CVSROOT/activitymail -cdagf %{sVv} -t admins@example.com
+  ALL $CVSROOT/CVSROOT/activitymail -cdagf '%{sVv}' -t admins@example.com
 
 =head1 KNOWN ISSUES
 

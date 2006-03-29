@@ -14,6 +14,7 @@ my $build = Module::Build->new
     recommends         => {
         File::Spec     => 0,
         HTML::Entities => 0,
+        URI::Escape    => 0,
     },
   );
 $build->create_build_script;
