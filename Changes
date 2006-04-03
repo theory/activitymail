@@ -9,6 +9,8 @@ Revision history for activitymail.
          comamnd-line, as it seems that some shells have a hard time
          recognizing "%{sVv}" as an argument rather than something else.
          reported by Dave Thorn.
+       - Added -C option to specify a character set for use in Content-Type
+         headers.
 
 1.23   2005-12-09T19:41:23
        - Various spelling corrections from Gavin Shelley.

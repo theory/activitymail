@@ -37,9 +37,9 @@ BEGIN {
     use vars qw($opt_f $opt_r $opt_l $opt_m $opt_t $opt_n $opt_i $opt_p $opt_c
                 $opt_s $opt_h $opt_d $opt_a $opt_D $opt_o $opt_e $opt_u $opt_g
                 $opt_w $opt_H $opt_B $opt_j $opt_M $opt_S $opt_v $opt_V $opt_N
-                $opt_I $opt_E $opt_q $opt_Q $opt_P $opt_U
+                $opt_I $opt_E $opt_q $opt_Q $opt_P $opt_U $opt_C
                );
-    getopts('f:lr:m:t:nipcs:dhaDo:e:u:gw:HB:j:M:SvVN:I:E:qQP:U');
+    getopts('f:lr:m:t:nipcs:dhaDo:e:u:gw:HB:j:M:SvVN:I:E:qQP:UC:');
 }
 
 ##############################################################################
@@ -73,10 +73,12 @@ $opt_q ||= $opt_Q;
 mydie("Cannot specify both -I and -E.\n") if $opt_I && $opt_E;
 
 # This hash will be used in several of the functions below.
-my %map = ( mod => 'Modified Files',
-            add => 'Added Files',
-            rem => 'Removed Files',
-            rev => 'Revision Data');
+my %map = (
+    mod => 'Modified Files',
+    add => 'Added Files',
+    rem => 'Removed Files',
+    rev => 'Revision Data',
+);
 
 ##############################################################################
 # The main part of the program.
@@ -89,8 +91,9 @@ usage() if $opt_h || (!$opt_l && !$opt_v && !($opt_f && $opt_t));
 # Run the directory logging mode, if specified.
 log_dir($ARGV[0]) if $opt_l;
 
-# Set the diffs option to its default.
+# Set the diffs anc charset options to their defaults.
 $opt_o ||= '-u';
+$opt_C ||= 'utf-8';
 
 # Set the content type.
 my $ctype = 'text/plain';
@@ -393,9 +396,9 @@ sub mail {
                    "http://search.cpan.org/dist/activitymail/\n";
     if ($opt_a) {
         print SENDMAIL qq{Content-Type: multipart/mixed; boundary="$opt_a"\n\n}
-          . "--$opt_a\nContent-Type: $ctype\n";
+          . "--$opt_a\nContent-Type: $ctype; charset=$opt_C\n";
     } else {
-        print SENDMAIL "Content-Type: $ctype\n";
+        print SENDMAIL "Content-Type: $ctype; charset=$opt_C\n";
     }
     print SENDMAIL "\n$$body";
     print SENDMAIL "--$opt_a--\n" if $opt_a;
@@ -888,7 +891,7 @@ sub attach {
 --$opt_a
 Content-Disposition: attachment; filename=$user-@gm[5,4,3,2,1,0]-diff.txt
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=$opt_C
 
 };
 }
@@ -965,6 +968,7 @@ Supported options:
   -M <size>      Maximum size of emailed messages in kilobytes.
   -V             Include revision numbers in the email message.
   -H             Use HTML for generated emails.
+  -C <charset>   Charset to use for Content-Type headers.
   -w <url>       Include links to specified ViewVC/CVSWeb url in email.
   -B <list>      Space-delimited list of file name suffixes not to diff.
   -I <regexen>   Space-delimited list of regexen to include files.
@@ -1199,6 +1203,13 @@ Include the old and new revision numbers after each file listed in the email.
 
 Generate HTML emails. The Content-Type header will be set to "text/html" and
 some basic HTML formatting tags used for the display of the commit message.
+
+=item -C <charset>
+
+Character set to be used in the Content-Type header. Defaults to "UTF-8". If
+much of the content in your repository is encoded in a character set
+incompatible with UTF-8, then set this option for a more appropriate character
+set.
 
 =item -w <url>
 
