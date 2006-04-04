@@ -1,6 +1,6 @@
 Revision history for activitymail.
 
-1.24
+1.24   2006-04-04T00:30:23
        - Removed ".diff" from diff URLs, since it doesn't seem to be required
          by CVSWeb and broke ViewVC. Reported by George Pavlov.
        - Added calls to uri_escape() to properly escape URLs. Reported by
@@ -10,7 +10,7 @@ Revision history for activitymail.
          recognizing "%{sVv}" as an argument rather than something else.
          reported by Dave Thorn.
        - Added -C option to specify a character set for use in Content-Type
-         headers.
+         headers. Suggested by Antoine Pitrou.
 
 1.23   2005-12-09T19:41:23
        - Various spelling corrections from Gavin Shelley.
