@@ -52,8 +52,11 @@ if ($opt_w) {
 
 # Set constants.
 use constant DEBUG => $opt_D ? 1 : 0;
-use constant SMLOCS => qw(/usr/lib/sendmail /usr/sbin/sendmail
-                          /usr/ucblib/sendmail);
+use constant SMLOCS => qw(
+    /usr/lib/sendmail
+    /usr/sbin/sendmail
+    /usr/ucblib/sendmail
+);
 
 # When we do forking to get diff files, we want to ignore the children.
 sub REAPER { wait; $SIG{CHLD} = \&REAPER }
