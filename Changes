@@ -1,6 +1,6 @@
 Revision history for activitymail.
 
-1.25  2008-05-05T19:42:16
+1.25  2008-05-05T19:57:28
        - The URL specified by the -w option is no longer URL-encoded. Only the
          associated parameters in the GET string are. Reported by Kris Jurka.
        - Added tye "configure_requires" parameter to Build.PL.
