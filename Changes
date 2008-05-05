@@ -7,6 +7,8 @@ Revision history for activitymail.
        - Updated copyright.
        - Added link to Subversion repository.
        - Updated POD test to take better advantage of Test::Pod 1.20 or later.
+       - Silenced the output of t/activitymail.t and updated it to use
+         File::Spec instead of a hard-coded Unix-style path.
 
 1.24   2006-04-04T00:30:23
        - Removed ".diff" from diff URLs, since it doesn't seem to be required
