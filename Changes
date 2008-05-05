@@ -1,5 +1,7 @@
 Revision history for activitymail.
 
+1.26
+
 1.25  2008-05-05T19:59:28
        - The URL specified by the -w option is no longer URL-encoded. Only the
          associated parameters in the GET string are. Reported by Kris Jurka.

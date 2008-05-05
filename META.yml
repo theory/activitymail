@@ -1,6 +1,6 @@
 ---
 name: activitymail
-version: 1.24
+version: 1.25
 author:
   - 'David Wheeler <david@justatheory.com>'
 abstract: CVS activity notification
