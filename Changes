@@ -4,6 +4,8 @@ Revision history for activitymail.
        - The URL specified by the -w option is no longer URL-encoded. Only the
          associated parameters in the GET string are. Reported by Kris Jurka.
        - Added tye "configure_requires" parameter to Build.PL.
+       - Updated copyright.
+       - Added link to Subversion repository.
 
 1.24   2006-04-04T00:30:23
        - Removed ".diff" from diff URLs, since it doesn't seem to be required
