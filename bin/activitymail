@@ -49,7 +49,7 @@ if ($opt_w) {
     require URI::Escape;
     URI::Escape->import('uri_escape');
 } else {
-    eval 'sub uri_escape { shift }';
+    eval 'sub uri_escape { @_ }';
 }
 
 # Set constants.
