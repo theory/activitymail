@@ -1,6 +1,6 @@
 Revision history for activitymail.
 
-1.26
+1.26  2009-04-09T22:29:48
       - Fixed "Illegal character in prototype for main::uri_escape" error.
         Reported by Bryce Nesbitt.
       - Moved repository to [GitHub](http://github.com/theory/activitymail/tree/master).
