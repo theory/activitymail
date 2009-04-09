@@ -1,6 +1,6 @@
 ---
 name: activitymail
-version: 1.25
+version: 1.26
 author:
   - 'David Wheeler <david@justatheory.com>'
 abstract: CVS activity notification
@@ -18,7 +18,7 @@ recommends:
   File::Spec: 0
   HTML::Entities: 0
   URI::Escape: 0
-generated_by: Module::Build version 0.280801
+generated_by: Module::Build version 0.32
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
   version: 1.2
