@@ -3,7 +3,10 @@ Revision history for activitymail.
 1.26  2009-04-09T22:29:48
       - Fixed "Illegal character in prototype for main::uri_escape" error.
         Reported by Bryce Nesbitt.
-      - Moved repository to [GitHub](http://github.com/theory/activitymail/tree/master).
+      - Moved repository to [GitHub](http://github.com/theory/activitymail).
+      - Fixed a bug handling `cvs add newdir` on CVS 1.12. Per the
+        [bug report](https://rt.cpan.org/Ticket/Display.html?id=49403) from
+        Shriram Natarajan.
 
 1.25  2008-05-05T19:59:28
        - The URL specified by the -w option is no longer URL-encoded. Only the

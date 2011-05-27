@@ -171,8 +171,9 @@ sub parse_file_list {
     my $dir = pop;
     my @revs;
     if ($dir) {
-        # CVS 1.12 command-line format.
-        @revs = shift =~ /(\S+\s(?:[\d\.]+|NONE)\s(?:[\d\.]+|NONE))\s?/g;
+        my $lv = shift;
+        @revs = $lv =~ /(\S+\s(?:[\d\.]+|NONE)\s(?:[\d\.]+|NONE))\s?/g;
+        unshift @revs, '-' if $lv =~ /^-/;
     } else {
         # Deprecated command-line format.
         DEBUG && dbpnt("File List: $_[0]\n");
